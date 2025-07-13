@@ -7,6 +7,7 @@ const questionSchema = new mongoose.Schema({
   note: String,
   isPinned: { type: Boolean, default: false },
   userAnswer: { type: String, default: "" }, // ✅ Added for user response
+  // In models/Session.js
 }, { timestamps: true });
 
 module.exports = mongoose.model("Question", questionSchema);

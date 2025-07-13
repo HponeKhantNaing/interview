@@ -100,3 +100,57 @@ exports.deleteSession = async (req, res) => {
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
+
+// @desc    Submit all answers and lock the session
+// @route   POST /api/sessions/:id/submit
+// @access  Private
+exports.finalSubmitSession = async (req, res) => {
+  try {
+    const { answers } = req.body;
+
+    if (!answers || typeof answers !== 'object' || Object.keys(answers).length === 0) {
+      return res.status(400).json({ message: "No answers provided" });
+    }
+
+    const session = await Session.findById(req.params.id).populate("questions");
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Check if already submitted
+    if (session.isFinalSubmitted) {
+      return res.status(400).json({ message: "Session already submitted" });
+    }
+
+    // Check ownership
+    if (session.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to submit this session" });
+    }
+
+    // Validate and update answers
+    const updates = [];
+    for (const question of session.questions) {
+      const userAnswer = answers[question._id];
+      if (userAnswer) {
+        updates.push(
+          Question.findByIdAndUpdate(
+            question._id,
+            { userAnswer },
+            { new: true }
+          )
+        );
+      }
+    }
+
+    await Promise.all(updates);
+
+    // Lock session
+    session.isFinalSubmitted = true;
+    await session.save();
+
+    res.status(200).json({ message: "Submitted successfully" });
+  } catch (error) {
+    console.error("Final submit error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
