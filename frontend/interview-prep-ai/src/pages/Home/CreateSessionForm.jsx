@@ -72,15 +72,15 @@ const CreateSessionForm = () => {
     }
   };
   return <div className="w-[90vw] md:w-[35vw] p-7 flex flex-col justify-center">
-      <h3 className="text-lg font-semibold text-black">
+      <h3 className="text-2xl font-semibold text-black">
         Create a New Session
       </h3>
-      <p className="text-xs text-slate-700 mt-[5px] mb-3">
+      <p className="text-[14px] text-slate-700 mt-[5px] mb-6">
         Fill out a few quick details and unlock your personalized set of
         interview questions!
       </p>
 
-      <form onSubmit={handleCreateSession} className="flex flex-col gap-3">
+      <form onSubmit={handleCreateSession} className="flex flex-col gap-4">
         <Input
           value={formData.role}
           onChange={({ target }) => handleChange("role", target.value)}
@@ -117,10 +117,10 @@ const CreateSessionForm = () => {
 
         <button
           type="submit"
-          className="btn-primary w-full mt-2"
+          className="btn-primary w-full mt-2 text-white bg-linear-to-r from-[#FF9324] to-[#e99a4b] hover:bg-orange-500 transition ease-in-out duration-100 cursor-pointer p-2 rounded-md"
           disabled={isLoading}
         >
-        {isLoading && <SpinnerLoader />} Create Session
+        {isLoading ? <SpinnerLoader /> : 'Create Session'}
         </button>
       </form>
     </div>

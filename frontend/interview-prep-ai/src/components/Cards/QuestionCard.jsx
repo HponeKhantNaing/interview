@@ -7,7 +7,9 @@ const QuestionCard = ({
   answer,
   questionId,
   userAnswer: initialAnswer,
-  isFinalSubmitted
+  isFinalSubmitted,
+  id,
+  questionNumber // <-- add prop
 }) => {
   const [userAnswer, setUserAnswer] = useState(initialAnswer || "");
   const [isSaved, setIsSaved] = useState(!!initialAnswer);
@@ -36,8 +38,8 @@ const QuestionCard = ({
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg border mb-4 shadow">
-      <h3 className="text-sm font-semibold text-gray-700">Q: {question}</h3>
+    <div className="bg-white p-6 rounded-lg border mb-4 shadow" id={id}>
+      <h3 className="text-lg font-bold text-gray-700">Q{questionNumber}: {question}</h3>
       <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div>
 
       {isFinalSubmitted ? (
@@ -66,7 +68,7 @@ const QuestionCard = ({
               <div className="flex items-center gap-3">
                 <button
                   onClick={saveAnswer}
-                  className="text-sm bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
+                  className="text-sm bg-linear-to-r from-[#FF9324] to-[#e99a4b] text-white px-3 py-1 rounded hover:bg-orange-600 focus:ring-2 focus:ring-orange-400"
                   disabled={isSaving}
                 >
                   {isSaving ? "Saving..." : "Save Answer"}
