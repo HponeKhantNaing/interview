@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
+import MonacoEditor from "../MonacoEditor";
+
+const AnswerTextarea = ({ value, onChange, placeholder, disabled }) => (
+  <textarea
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    className="w-full min-h-44 bg-gray-100 rounded p-4 text-sm mt-6 mb-2"
+    disabled={disabled}
+  />
+);
 
 const QuestionCard = ({
   question,
@@ -38,9 +49,9 @@ const QuestionCard = ({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg border mb-4 shadow" id={id}>
-      <h3 className="text-lg font-bold text-gray-700">Q{questionNumber}: {question}</h3>
-      <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div>
+    <div className="bg-white p-4 px-6 rounded-lg mb-4 shadow-sm" id={id}>
+      <h3 className="text-xl font-bold text-gray-800 mt-2.5">Q{questionNumber}: {question}</h3>
+      {/* <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div> */}
 
       {isFinalSubmitted ? (
         <div className="bg-gray-50 p-3 rounded border text-sm text-gray-700">
@@ -56,14 +67,14 @@ const QuestionCard = ({
         <>
           {editMode ? (
             <>
-              <textarea
+              <MonacoEditor
                 value={userAnswer}
-                onChange={(e) => {
-                  setUserAnswer(e.target.value);
+                onChange={(val) => {
+                  setUserAnswer(val ?? "");
                   setIsSaved(false);
                 }}
-                placeholder="Your answer..."
-                className="w-full border rounded p-2 text-sm mb-2"
+                language="javascript"
+                height={250}
               />
               <div className="flex items-center gap-3">
                 <button
@@ -92,4 +103,5 @@ const QuestionCard = ({
   );
 };
 
+export { AnswerTextarea };
 export default QuestionCard;
