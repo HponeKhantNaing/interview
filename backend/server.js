@@ -1,3 +1,27 @@
+// Suppress pdfjs-dist DOMMatrix/Path2D polyfill warnings
+const originalWarn = console.warn;
+console.warn = function (...args) {
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('Cannot polyfill `DOMMatrix`') || args[0].includes('Cannot polyfill `Path2D`'))
+  ) {
+    return; // Suppress these warnings
+  }
+  originalWarn.apply(console, args);
+};
+
+// Also patch process.stderr.write to suppress these warnings
+const originalStderrWrite = process.stderr.write;
+process.stderr.write = function (chunk, encoding, callback) {
+  if (
+    typeof chunk === 'string' &&
+    (chunk.includes('Cannot polyfill `DOMMatrix`') || chunk.includes('Cannot polyfill `Path2D`'))
+  ) {
+    return true; // Suppress these warnings
+  }
+  return originalStderrWrite.apply(process.stderr, arguments);
+};
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");

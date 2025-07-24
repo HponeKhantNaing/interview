@@ -2,6 +2,8 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "axios": "^1.11.0",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^3.11.174",
     "string-similarity": "^4.0.4"
   }
 }

@@ -5,6 +5,9 @@ const {
   feedbackPrompt,
   checkAnswerPrompt,
 } = require("../utils/prompts");
+const pdfParse = require("pdf-parse");
+const { extractSkillsFromText, extractRoleFromText, extractDescriptionFromText, extractProjectsFromText } = require("../utils/prompts");
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -13,18 +16,66 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 // @access  Private
 const generateInterviewQuestions = async (req, res) => {
   try {
-    const { role, experience, topicsToFocus, numberOfQuestions } = req.body;
-    // Default to 5 for testing, but allow override from frontend
+    let { role, experience, topicsToFocus, numberOfQuestions, pdf, description, projects } = req.body;
     const numQuestions = numberOfQuestions || 5;
     if (!role || !experience || !topicsToFocus || !numQuestions) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    // Extract data from PDF if provided
+    let pdfSkills = [], pdfRole = null, pdfDescription = null, pdfProjects = [];
+    let pdfText = "";
+    if (pdf && pdf.fileName) {
+      const fs = require("fs");
+      const path = require("path");
+      const pdfPath = path.join(__dirname, "../uploads", pdf.fileName);
+      if (fs.existsSync(pdfPath)) {
+        const dataBuffer = fs.readFileSync(pdfPath);
+        try {
+          // Use pdfjs-dist for robust extraction
+          const loadingTask = pdfjsLib.getDocument({ data: dataBuffer });
+          const pdfDoc = await loadingTask.promise;
+          let textContent = [];
+          for (let i = 1; i <= pdfDoc.numPages; i++) {
+            const page = await pdfDoc.getPage(i);
+            const content = await page.getTextContent();
+            textContent.push(content.items.map(item => item.str).join(" "));
+          }
+          pdfText = textContent.join("\n");
+        } catch (err) {
+          // fallback to pdf-parse if pdfjs-dist fails
+          try {
+            const pdfData = await pdfParse(dataBuffer);
+            pdfText = pdfData.text;
+          } catch (err2) {
+            pdfText = "";
+          }
+        }
+        // Now extract info from pdfText
+        pdfSkills = extractSkillsFromText(pdfText);
+        pdfRole = extractRoleFromText(pdfText);
+        pdfDescription = extractDescriptionFromText(pdfText);
+        pdfProjects = extractProjectsFromText(pdfText);
+      }
+    }
+
+    // Combine manual topics and PDF skills
+    let allTopics = topicsToFocus.split(",").map(t => t.trim()).filter(Boolean);
+    for (const skill of pdfSkills) {
+      if (!allTopics.includes(skill)) allTopics.push(skill);
+    }
+    const combinedTopics = allTopics.join(", ");
+
+    // Prefer form role/description, but fallback to PDF if missing
+    const finalRole = role || pdfRole || "";
+    const finalDescription = description || pdfDescription || "";
+    const finalProjects = (projects && projects.length) ? projects : pdfProjects;
+
     // Compose prompt for balanced questions
     const prompt = questionAnswerPrompt(
-      role,
+      finalRole,
       experience,
-      topicsToFocus,
+      combinedTopics,
       numQuestions
     );
 
@@ -43,7 +94,6 @@ const generateInterviewQuestions = async (req, res) => {
     // Fallback: If type is missing, classify in code (simple heuristic)
     data = data.map(q => {
       if (!q.type) {
-        // If answer contains code block, treat as coding, else technical
         if (/```/.test(q.answer)) {
           q.type = "coding";
         } else {

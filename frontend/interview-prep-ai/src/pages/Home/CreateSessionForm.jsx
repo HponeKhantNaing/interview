@@ -62,6 +62,7 @@ const CreateSessionForm = () => {
           experience,
           topicsToFocus,
           numberOfQuestions,
+          pdf: pdfInfo, // Pass PDF info to backend for skill extraction
         }
       );
       // Should be array like [{question, answer}, ...]

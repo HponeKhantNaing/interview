@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import MonacoEditor from "../MonacoEditor";
+import { useRef } from "react";
 
 const AnswerTextarea = ({ value, onChange, placeholder, disabled }) => (
   <textarea
@@ -26,10 +27,26 @@ const QuestionCard = ({
   const [userAnswer, setUserAnswer] = useState(initialAnswer || "");
   // Remove isSaved, isSaving, editMode
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const saveTimeout = useRef(null);
 
   useEffect(() => {
     setUserAnswer(initialAnswer || "");
   }, [initialAnswer]);
+
+  // Debounced autosave effect
+  useEffect(() => {
+    if (isFinalSubmitted) return;
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      if (userAnswer !== initialAnswer) {
+        axiosInstance.post(API_PATHS.QUESTION.ANSWER(questionId), {
+          answer: userAnswer,
+        });
+      }
+    }, 600); // 600ms debounce
+    return () => clearTimeout(saveTimeout.current);
+    // eslint-disable-next-line
+  }, [userAnswer, isFinalSubmitted, questionId]);
 
   // Remove saveAnswer and related logic
 
