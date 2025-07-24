@@ -20,38 +20,23 @@ const QuestionCard = ({
   userAnswer: initialAnswer,
   isFinalSubmitted,
   id,
-  questionNumber // <-- add prop
+  questionNumber, // <-- add prop
+  type // <-- add type prop
 }) => {
   const [userAnswer, setUserAnswer] = useState(initialAnswer || "");
-  const [isSaved, setIsSaved] = useState(!!initialAnswer);
-  const [isSaving, setIsSaving] = useState(false);
-  const [editMode, setEditMode] = useState(!initialAnswer);
+  // Remove isSaved, isSaving, editMode
+  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
 
   useEffect(() => {
     setUserAnswer(initialAnswer || "");
-    setIsSaved(!!initialAnswer);
-    setEditMode(!initialAnswer);
   }, [initialAnswer]);
 
-  const saveAnswer = async () => {
-    setIsSaving(true);
-    try {
-      await axiosInstance.post(API_PATHS.QUESTION.ANSWER(questionId), {
-        answer: userAnswer,
-      });
-      setIsSaved(true);
-      setEditMode(false);
-    } catch (error) {
-      console.error("Failed to save answer", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // Remove saveAnswer and related logic
 
   return (
     <div className="bg-white p-4 px-6 rounded-lg mb-4 shadow-sm" id={id}>
       <h3 className="text-xl font-bold text-gray-800 mt-2.5">Q{questionNumber}: {question}</h3>
-      {/* <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div> */}
+      <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div>
 
       {isFinalSubmitted ? (
         <div className="bg-gray-50 p-3 rounded border text-sm text-gray-700">
@@ -65,37 +50,51 @@ const QuestionCard = ({
         </div>
       ) : (
         <>
-          {editMode ? (
+          {type === "coding" ? (
             <>
+              <div className="mb-2 flex items-center gap-2">
+                <label htmlFor={`language-select-${questionId}`} className="text-sm font-medium text-gray-700">Language:</label>
+                <select
+                  id={`language-select-${questionId}`}
+                  value={selectedLanguage}
+                  onChange={e => setSelectedLanguage(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="python">Python</option>
+                  <option value="java">Java</option>
+                  <option value="c">C</option>
+                  <option value="cpp">C++</option>
+                  <option value="csharp">C#</option>
+                  <option value="go">Go</option>
+                  <option value="php">PHP</option>
+                  <option value="ruby">Ruby</option>
+                  <option value="swift">Swift</option>
+                  <option value="kotlin">Kotlin</option>
+                  <option value="rust">Rust</option>
+                  <option value="scala">Scala</option>
+                  <option value="sql">SQL</option>
+                </select>
+              </div>
               <MonacoEditor
                 value={userAnswer}
                 onChange={(val) => {
                   setUserAnswer(val ?? "");
-                  setIsSaved(false);
                 }}
-                language="javascript"
+                language={selectedLanguage}
                 height={250}
               />
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={saveAnswer}
-                  className="text-sm bg-linear-to-r from-[#FF9324] to-[#e99a4b] text-white px-3 py-1 rounded hover:bg-orange-600 focus:ring-2 focus:ring-orange-400"
-                  disabled={isSaving}
-                >
-                  {isSaving ? "Saving..." : "Save Answer"}
-                </button>
-              </div>
             </>
           ) : (
-            <div className="flex items-center gap-4 text-sm mt-2">
-              <span className="text-green-600 font-medium">✔ Saved Answered</span>
-              <button
-                onClick={() => setEditMode(true)}
-                className="text-blue-600 underline"
-              >
-                Modify Answer
-              </button>
-            </div>
+            <AnswerTextarea
+              value={userAnswer}
+              onChange={(e) => {
+                setUserAnswer(e.target.value);
+              }}
+              placeholder="Type your answer here..."
+              disabled={false}
+            />
           )}
         </>
       )}

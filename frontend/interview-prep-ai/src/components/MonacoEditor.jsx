@@ -29,7 +29,7 @@ const MonacoEditor = ({ value, onChange, language = "javascript", height = 350, 
           marginRight: 8,
           boxShadow: "0 2px 4px 0 rgba(0,0,0,0.04)"
         }}>
-          answer.js
+          Answer
         </div>
       </div>
       <MonacoEditorReact

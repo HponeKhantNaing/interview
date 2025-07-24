@@ -23,6 +23,8 @@ export const API_PATHS = {
     DELETE: (id) => `/api/sessions/${id}`, // Delete a session
     // 🍊🍊🍊🍊🍊🍊🍊🍊🍊
     SUBMIT: (id) => `/api/sessions/${id}/submit`, // ✅ Final submit endpoint
+    USER_FEEDBACK: (id) => `/api/sessions/${id}/user-feedback`, // Endpoint to save user feedback
+    UPLOAD_PDF: "/api/sessions/upload-pdf", // New endpoint for PDF upload
   },
   
   QUESTION: {

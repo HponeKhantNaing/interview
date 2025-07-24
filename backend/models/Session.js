@@ -7,7 +7,14 @@ const sessionSchema = new mongoose.Schema({
   topicsToFocus: { type: String, required: true },
   description: String,
   questions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
-  isFinalSubmitted: { type: Boolean, default: false }
+  isFinalSubmitted: { type: Boolean, default: false },
+  feedback: { type: Object, default: null },
+  userFeedback: { type: String, default: "" },
+  pdf: {
+    fileName: String,
+    fileUrl: String,
+    originalName: String
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Session", sessionSchema);

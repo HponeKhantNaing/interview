@@ -1,5 +1,9 @@
 const Session = require("../models/Session");
 const Question = require("../models/Question");
+const { generateFeedback } = require("./aiController");
+const stringSimilarity = require('string-similarity');
+const axios = require('axios');
+const API_BASE = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
 
 // @desc    Create a new session and linked questions
 // @route   POST /api/sessions/create
@@ -24,6 +28,7 @@ exports.createSession = async (req, res) => {
           session: session._id,
           question: q.question,
           answer: q.answer,
+          type: q.type, // Save the type field
         });
         return question._id;
       })
@@ -148,9 +153,121 @@ exports.finalSubmitSession = async (req, res) => {
     session.isFinalSubmitted = true;
     await session.save();
 
-    res.status(200).json({ message: "Submitted successfully" });
+    // AI-based scoring system
+    let score = 0;
+    const token = req.headers.authorization;
+    await Promise.all(session.questions.map(async (q) => {
+      const userAnswer = answers[q._id] || "";
+      if (!userAnswer) return;
+      try {
+        const aiRes = await axios.post(
+          `${API_BASE}/api/ai/check-answer`,
+          {
+            question: q.question,
+            userAnswer,
+            correctAnswer: q.answer
+          },
+          {
+            headers: { Authorization: token }
+          }
+        );
+        if (aiRes.data && aiRes.data.isRelevant) score += 1;
+      } catch (err) {
+        // If AI fails, do not count as correct
+      }
+    }));
+
+    // Prepare questions array for feedback
+    const questionsForFeedback = session.questions.map(q => ({
+      question: q.question,
+      answer: q.answer,
+      userAnswer: answers[q._id] || ""
+    }));
+
+    // Generate feedback using AI
+    let feedback = null;
+    try {
+      // Use the same req/res pattern as other controllers
+      const feedbackRes = await new Promise((resolve, reject) => {
+        generateFeedback({
+          body: {
+            role: session.role,
+            experience: session.experience,
+            topicsToFocus: session.topicsToFocus,
+            questions: questionsForFeedback
+          }
+        }, {
+          status: (code) => ({
+            json: (data) => code === 200 ? resolve(data) : reject(data)
+          })
+        });
+      });
+      feedback = feedbackRes;
+    } catch (err) {
+      feedback = { error: "Failed to generate feedback" };
+    }
+
+    // Save feedback to session
+    session.feedback = feedback;
+    await session.save();
+
+    res.status(200).json({ message: "Submitted successfully", score, feedback });
   } catch (error) {
     console.error("Final submit error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Save user feedback for a session
+// @route   POST /api/sessions/:id/user-feedback
+// @access  Private
+exports.saveUserFeedback = async (req, res) => {
+  try {
+    const { userFeedback } = req.body;
+    const session = await Session.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+    if (session.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to update feedback for this session" });
+    }
+    session.userFeedback = userFeedback;
+    await session.save();
+    res.status(200).json({ message: "User feedback saved successfully", userFeedback });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Upload a PDF file for a session and save its info
+// @route   POST /api/sessions/upload-pdf
+// @access  Private
+exports.uploadSessionPDF = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No PDF file uploaded' });
+    }
+    // Save PDF info to session if sessionId is provided
+    const { sessionId } = req.body;
+    let session = null;
+    if (sessionId) {
+      session = await Session.findById(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: 'Session not found' });
+      }
+      session.pdf = {
+        fileName: req.file.filename,
+        fileUrl: `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`,
+        originalName: req.file.originalname
+      };
+      await session.save();
+    }
+    res.status(200).json({
+      fileName: req.file.filename,
+      fileUrl: `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`,
+      originalName: req.file.originalname
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to upload PDF', error: error.message });
   }
 };

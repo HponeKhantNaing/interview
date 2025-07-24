@@ -7,6 +7,7 @@ const questionSchema = new mongoose.Schema({
   note: String,
   isPinned: { type: Boolean, default: false },
   userAnswer: { type: String, default: "" }, // ✅ Added for user response
+  type: { type: String, enum: ["technical", "coding"], required: true }, // New field for question type
   // In models/Session.js
 }, { timestamps: true });
 

@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Home/Dashboard";
 import InterviewPrep from "./pages/InterviewPrep/InterviewPrep";
+import Feedback from "./pages/InterviewPrep/Feedback";
 import UserProvider from "./context/userContext";
 
 const App = () => {
@@ -20,6 +21,10 @@ const App = () => {
             <Route
               path="/interview-prep/:sessionId"
               element={<InterviewPrep />}
+            />
+            <Route
+              path="/interview-prep/:sessionId/feedback"
+              element={<Feedback />}
             />
           </Routes>
         </Router>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import moment from "moment";
 import { AnimatePresence, motion } from "framer-motion";
 import { LuCircleAlert, LuListCollapse, LuArrowUp } from "react-icons/lu";
@@ -16,6 +16,7 @@ import AIResponsePreview from "./components/AIResponsePreview";
 
 const InterviewPrep = () => {
   const { sessionId } = useParams();
+  const navigate = useNavigate();
 
   const [sessionData, setSessionData] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -32,6 +33,9 @@ const InterviewPrep = () => {
   const [timer, setTimer] = useState(60 * 60); // 1 hour in seconds
   const QUESTIONS_PER_PAGE = 5;
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [userFeedbackInput, setUserFeedbackInput] = useState("");
+  const [isSavingUserFeedback, setIsSavingUserFeedback] = useState(false);
+  const [userFeedbackSaved, setUserFeedbackSaved] = useState(false);
 
   // Timer effect
   useEffect(() => {
@@ -347,6 +351,7 @@ const InterviewPrep = () => {
                   isFinalSubmitted={sessionData?.isFinalSubmitted}
                   id={`question-card-${data._id}`}
                   questionNumber={startIdx + index + 1}
+                  type={data.type} // Pass type prop
                 />
               ));
             })()}
@@ -424,8 +429,65 @@ const InterviewPrep = () => {
           )}
 
           {score !== null && (
-            <div className="text-center mt-2 text-lg font-semibold text-pink-700">
-               You scored {score} out of {sessionData.questions.length}
+            null
+          )}
+
+          {/* Feedback Section */}
+          {sessionData?.isFinalSubmitted && sessionData?.feedback && (
+            <div className="flex justify-center mt-8">
+              <button
+                className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors"
+                onClick={() => navigate(`/interview-prep/${sessionId}/feedback`)}
+              >
+                Show Feedback
+              </button>
+            </div>
+          )}
+
+          {/* User Feedback Form */}
+          {sessionData?.isFinalSubmitted && (
+            <div className="mt-8 p-6 rounded-lg bg-white border border-gray-200">
+              <h3 className="text-lg font-bold mb-2 text-orange-600">Your Feedback</h3>
+              {sessionData.userFeedback ? (
+                <div className="mb-2">
+                  <div className="text-gray-700">{sessionData.userFeedback}</div>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingUserFeedback(true);
+                    try {
+                      await axiosInstance.post(API_PATHS.SESSION.USER_FEEDBACK(sessionId), {
+                        userFeedback: userFeedbackInput,
+                      });
+                      toast.success("Your feedback has been saved!");
+                      setUserFeedbackSaved(true);
+                      fetchSessionDetailsById();
+                    } catch (err) {
+                      toast.error("Failed to save feedback");
+                    } finally {
+                      setIsSavingUserFeedback(false);
+                    }
+                  }}
+                >
+                  <textarea
+                    className="w-full border border-gray-300 rounded p-2 mb-2"
+                    rows={4}
+                    placeholder="Share your thoughts about this session..."
+                    value={userFeedbackInput}
+                    onChange={(e) => setUserFeedbackInput(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors"
+                    disabled={isSavingUserFeedback || !userFeedbackInput.trim()}
+                  >
+                    {isSavingUserFeedback ? "Saving..." : "Submit Feedback"}
+                  </button>
+                </form>
+              )}
             </div>
           )}
           </div>
