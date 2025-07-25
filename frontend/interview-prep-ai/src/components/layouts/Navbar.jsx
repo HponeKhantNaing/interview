@@ -11,7 +11,14 @@ const Navbar = () => {
             Key2Career
           </h2>
         </Link>
-
+        <div className="flex-1 flex justify-center gap-8">
+          <Link to="/dashboard" className="text-base font-medium text-orange-600 hover:underline">
+            Dashboard
+          </Link>
+          <Link to="/interview-test" className="text-base font-medium text-orange-600 hover:underline">
+            Interview Test
+          </Link>
+        </div>
         <ProfileInfoCard />
       </div>
     </div>

@@ -33,4 +33,10 @@ export const API_PATHS = {
     UPDATE_NOTE: (id) => `/api/questions/${id}/note`,
     ANSWER: (id) => `/api/questions/${id}/answer`, // ✅ Add this line
   },
+
+  ACTUAL: {
+    CREATE: "/api/actual/create",
+    GET_ALL: "/api/actual/my-sessions",
+    GET_ONE: (id) => `/api/actual/${id}`,
+  },
 };

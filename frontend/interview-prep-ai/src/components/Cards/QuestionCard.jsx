@@ -53,7 +53,7 @@ const QuestionCard = ({
   return (
     <div className="bg-white p-4 px-6 rounded-lg mb-4 shadow-sm" id={id}>
       <h3 className="text-xl font-bold text-gray-800 mt-2.5">Q{questionNumber}: {question}</h3>
-      <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div>
+      {/* <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div> */}
 
       {isFinalSubmitted ? (
         <div className="bg-gray-50 p-3 rounded border text-sm text-gray-700">

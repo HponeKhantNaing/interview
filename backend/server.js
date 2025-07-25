@@ -31,6 +31,7 @@ const connectDB = require("./config/db");
 const authRoutes = require('./routes/authRoutes')
 const sessionRoutes = require('./routes/sessionRoutes')
 const questionRoutes = require('./routes/questionRoutes');
+const actualRoutes = require('./routes/actualRoutes');
 const { protect } = require("./middlewares/authMiddleware");
 const { generateInterviewQuestions, generateConceptExplanation, checkAnswerWithAI } = require("./controllers/aiController");
 
@@ -54,6 +55,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/actual', actualRoutes);
 
 app.use("/api/ai/generate-questions", protect, generateInterviewQuestions);
 app.use("/api/ai/generate-explanation", protect, generateConceptExplanation);
