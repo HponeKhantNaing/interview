@@ -10,6 +10,9 @@ const actualSchema = new mongoose.Schema({
   isFinalSubmitted: { type: Boolean, default: false },
   feedback: { type: Object, default: null },
   userFeedback: { type: String, default: "" },
+  timerStartTime: { type: Date, default: Date.now },
+  timerDuration: { type: Number, default: 3600 }, // 1 hour in seconds
+  submissionTime: { type: Number, default: null }, // Time taken to submit in seconds
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

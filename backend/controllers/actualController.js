@@ -3,6 +3,7 @@ const Question = require("../models/Question");
 const fs = require("fs");
 const path = require("path");
 const { generateFeedback } = require("./aiController");
+const { calculateRemainingTime } = require("../utils/timerUtils");
 
 function pickDataset(role) {
   const r = role.toLowerCase();
@@ -84,7 +85,16 @@ exports.getActualSessionById = async (req, res) => {
     if (!session) {
       return res.status(404).json({ success: false, message: "Session not found" });
     }
-    res.status(200).json({ success: true, session });
+    // Calculate remaining time
+    const remainingTime = calculateRemainingTime(session.timerStartTime, session.timerDuration);
+    
+    res.status(200).json({ 
+      success: true, 
+      session: {
+        ...session.toObject(),
+        remainingTime
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server Error" });
   }
@@ -128,7 +138,12 @@ exports.finalSubmitActualSession = async (req, res) => {
       }
     }
     await Promise.all(updates);
+    
+    // Calculate submission time
+    const submissionTime = Math.floor((new Date() - new Date(session.timerStartTime)) / 1000);
+    
     session.isFinalSubmitted = true;
+    session.submissionTime = submissionTime;
     await session.save();
     // Generate feedback (reuse AI feedback logic, but pass questions)
     let feedback = null;
@@ -144,7 +159,8 @@ exports.finalSubmitActualSession = async (req, res) => {
             role: session.role,
             experience: session.experience,
             topicsToFocus: session.topicsToFocus,
-            questions: questionsForFeedback
+            questions: questionsForFeedback,
+            submissionTime: submissionTime
           }
         }, {
           status: (code) => ({
@@ -153,6 +169,18 @@ exports.finalSubmitActualSession = async (req, res) => {
         });
       });
       feedback = feedbackRes;
+      
+      // Validate feedback - if no answers provided, force all scores to 0
+      const hasAnyAnswers = questionsForFeedback.some(q => q.userAnswer && q.userAnswer.trim() !== "");
+      if (!hasAnyAnswers && feedback && feedback.skillsBreakdown) {
+        feedback.skillsBreakdown = feedback.skillsBreakdown.map(skill => ({
+          ...skill,
+          score: 0
+        }));
+        feedback.strengths = [];
+        feedback.areasForImprovement = ["No answers were provided", "Complete all questions to get meaningful feedback"];
+        feedback.summary = "No answers were provided for this session. Please complete all questions to receive proper feedback.";
+      }
     } catch (err) {
       feedback = { error: "Failed to generate feedback" };
     }

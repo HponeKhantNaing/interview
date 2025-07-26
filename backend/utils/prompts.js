@@ -51,31 +51,47 @@ const conceptExplainPrompt = (question) => `
     Important: Do NOT add any extra text outside the JSON format. Only return valid JSON.
     `;
 
-const feedbackPrompt = (role, experience, topicsToFocus, questions) => `
+const feedbackPrompt = (role, experience, topicsToFocus, questions, submissionTime = null) => `
     You are an AI interview coach. Analyze the following interview session for a candidate:
     - Role: ${role}
     - Experience: ${experience} years
     - Focus Topics: ${topicsToFocus}
     - Questions and Answers: ${JSON.stringify(questions)}
+    ${submissionTime ? `- Submission Time: ${submissionTime} seconds (${Math.floor(submissionTime / 60)} minutes ${submissionTime % 60} seconds)` : ''}
+
+    CRITICAL RULES:
+    1. Check if ANY answers are provided. If all userAnswer fields are empty, null, or undefined, then ALL scores must be 0.
+    2. If even one question has a non-empty answer, evaluate only that question and score others as 0.
+    3. Empty answers, null answers, or answers with only whitespace should be treated as NO ANSWER.
 
     Task:
-    1. Evaluate the candidate's answers for each question.
-    2. Identify key strengths and areas for improvement based on their answers.
-    3. Provide a breakdown of their skills (e.g., technical, problem-solving, communication) with a score (1-5) for each.
-    4. Summarize the candidate's overall performance.
-    5. Return the result as a valid JSON object in the following format:
+    1. First, count how many questions have actual answers (non-empty userAnswer).
+    2. If count is 0 (no answers provided):
+       - Set ALL skill scores to 0
+       - Set strengths to empty array []
+       - Set areasForImprovement to ["No answers were provided", "Complete all questions to get meaningful feedback"]
+       - Set summary to "No answers were provided for this session. Please complete all questions to receive proper feedback."
+    3. If count > 0, evaluate only the answered questions and score unanswered as 0.
+    4. Provide a breakdown of their skills with appropriate scores (0-5).
+    5. Include submission time information in the summary if provided.
+    6. Return the result as a valid JSON object in the following format:
 
     {
       "skillsBreakdown": [
-        { "skill": "Skill Name", "score": 4 },
-        ...
+        { "skill": "Technical Knowledge", "score": 0 },
+        { "skill": "Problem Solving", "score": 0 },
+        { "skill": "Communication", "score": 0 }
       ],
-      "strengths": ["Strength 1", "Strength 2", ...],
-      "areasForImprovement": ["Area 1", "Area 2", ...],
-      "summary": "Short summary of performance"
+      "strengths": [],
+      "areasForImprovement": ["No answers were provided", "Complete all questions to get meaningful feedback"],
+      "summary": "No answers were provided for this session. Please complete all questions to receive proper feedback."
     }
 
-    Important: Only return valid JSON. Do NOT add any extra text outside the JSON format.
+    IMPORTANT: 
+    - If ALL userAnswer fields are empty/null/undefined, ALL scores must be 0.
+    - Do NOT give high scores for empty answers.
+    - If submission time is provided, mention it in the summary (e.g., "Session completed in X minutes Y seconds").
+    - Only return valid JSON. Do NOT add any extra text outside the JSON format.
 `;
 
 const checkAnswerPrompt = (question, userAnswer, correctAnswer) => `

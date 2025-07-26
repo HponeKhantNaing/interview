@@ -1,6 +1,7 @@
 const Session = require("../models/Session");
 const Question = require("../models/Question");
 const { generateFeedback } = require("./aiController");
+const { calculateRemainingTime } = require("../utils/timerUtils");
 const stringSimilarity = require('string-similarity');
 const axios = require('axios');
 const API_BASE = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
@@ -70,7 +71,16 @@ exports.getSessionById = async (req, res) => {
         .json({ success: false, message: "Session not found" });
     }
 
-    res.status(200).json({ success: true, session });
+    // Calculate remaining time
+    const remainingTime = calculateRemainingTime(session.timerStartTime, session.timerDuration);
+    
+    res.status(200).json({ 
+      success: true, 
+      session: {
+        ...session.toObject(),
+        remainingTime
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server Error" });
   }
@@ -113,8 +123,9 @@ exports.finalSubmitSession = async (req, res) => {
   try {
     const { answers } = req.body;
 
-    if (!answers || typeof answers !== 'object' || Object.keys(answers).length === 0) {
-      return res.status(400).json({ message: "No answers provided" });
+    // Allow submission even with no answers - feedback will handle this case
+    if (!answers || typeof answers !== 'object') {
+      answers = {};
     }
 
     const session = await Session.findById(req.params.id).populate("questions");
@@ -149,16 +160,20 @@ exports.finalSubmitSession = async (req, res) => {
 
     await Promise.all(updates);
 
+    // Calculate submission time
+    const submissionTime = Math.floor((new Date() - new Date(session.timerStartTime)) / 1000);
+    
     // Lock session
     session.isFinalSubmitted = true;
+    session.submissionTime = submissionTime;
     await session.save();
 
-    // AI-based scoring system
+    // AI-based scoring system (handle empty answers)
     let score = 0;
     const token = req.headers.authorization;
     await Promise.all(session.questions.map(async (q) => {
       const userAnswer = answers[q._id] || "";
-      if (!userAnswer) return;
+      if (!userAnswer || userAnswer.trim() === "") return; // Skip empty answers
       try {
         const aiRes = await axios.post(
           `${API_BASE}/api/ai/check-answer`,
@@ -177,7 +192,7 @@ exports.finalSubmitSession = async (req, res) => {
       }
     }));
 
-    // Prepare questions array for feedback
+    // Prepare questions array for feedback (include all questions even with empty answers)
     const questionsForFeedback = session.questions.map(q => ({
       question: q.question,
       answer: q.answer,
@@ -194,7 +209,8 @@ exports.finalSubmitSession = async (req, res) => {
             role: session.role,
             experience: session.experience,
             topicsToFocus: session.topicsToFocus,
-            questions: questionsForFeedback
+            questions: questionsForFeedback,
+            submissionTime: submissionTime
           }
         }, {
           status: (code) => ({
@@ -203,6 +219,18 @@ exports.finalSubmitSession = async (req, res) => {
         });
       });
       feedback = feedbackRes;
+      
+      // Validate feedback - if no answers provided, force all scores to 0
+      const hasAnyAnswers = questionsForFeedback.some(q => q.userAnswer && q.userAnswer.trim() !== "");
+      if (!hasAnyAnswers && feedback && feedback.skillsBreakdown) {
+        feedback.skillsBreakdown = feedback.skillsBreakdown.map(skill => ({
+          ...skill,
+          score: 0
+        }));
+        feedback.strengths = [];
+        feedback.areasForImprovement = ["No answers were provided", "Complete all questions to get meaningful feedback"];
+        feedback.summary = "No answers were provided for this session. Please complete all questions to receive proper feedback.";
+      }
     } catch (err) {
       feedback = { error: "Failed to generate feedback" };
     }

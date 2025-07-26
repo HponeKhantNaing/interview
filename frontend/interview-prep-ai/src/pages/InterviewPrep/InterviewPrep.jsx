@@ -13,6 +13,8 @@ import QuestionCard from "../../components/Cards/QuestionCard";
 import Drawer from "../../components/Drawer";
 import SkeletonLoader from "../../components/Loader/SkeletonLoader";
 import AIResponsePreview from "./components/AIResponsePreview";
+import Timer from "../../components/Timer/Timer";
+import ConfirmationModal from "../../components/Modal/ConfirmationModal";
 
 const InterviewPrep = () => {
   const { sessionId } = useParams();
@@ -31,27 +33,84 @@ const InterviewPrep = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [scrollToQuestionId, setScrollToQuestionId] = useState(null);
   const [timer, setTimer] = useState(60 * 60); // 1 hour in seconds
+  const [isTimerExpired, setIsTimerExpired] = useState(false);
+  const [isTimerStopped, setIsTimerStopped] = useState(false);
   const QUESTIONS_PER_PAGE = 5;
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [userFeedbackInput, setUserFeedbackInput] = useState("");
   const [isSavingUserFeedback, setIsSavingUserFeedback] = useState(false);
   const [userFeedbackSaved, setUserFeedbackSaved] = useState(false);
+  const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
 
   // Timer effect
   useEffect(() => {
-    if (timer <= 0) return;
+    if (timer <= 0 || isTimerStopped) {
+      if (timer <= 0) {
+        setIsTimerExpired(true);
+      }
+      return;
+    }
     const interval = setInterval(() => {
-      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      setTimer((prev) => {
+        if (prev <= 1) {
+          setIsTimerExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(interval);
-  }, [timer]);
+  }, [timer, isTimerStopped]);
 
-  // Format timer as 00:00:00
-  const formatTimer = (seconds) => {
-    const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
-    const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-    const s = String(seconds % 60).padStart(2, '0');
-    return `${h} : ${m} : ${s}`;
+  // Auto-submit when timer expires
+  useEffect(() => {
+    if (isTimerExpired && sessionData && !sessionData.isFinalSubmitted) {
+      const autoSubmit = async () => {
+        try {
+          const answerMap = {};
+          sessionData.questions.forEach((q) => {
+            // Include all answers (including empty ones) for proper feedback
+            answerMap[q._id] = q.userAnswer || "";
+          });
+
+          await axiosInstance.post(API_PATHS.SESSION.SUBMIT(sessionId), {
+            answers: answerMap,
+          });
+
+          toast.success("⏰ Time's up! Session auto-submitted.");
+          fetchSessionDetailsById(); // reload session state
+        } catch (err) {
+          toast.error("❌ Auto-submission failed.");
+          console.error("Auto-submission error:", err);
+        }
+      };
+      
+      autoSubmit();
+    }
+  }, [isTimerExpired, sessionData, sessionId]);
+
+  // Handle final submit
+  const handleFinalSubmit = async () => {
+    try {
+      // Stop the timer
+      setIsTimerStopped(true);
+      
+      const answerMap = {};
+      sessionData.questions.forEach((q) => {
+        // Include all answers (including empty ones) for proper feedback
+        answerMap[q._id] = q.userAnswer || "";
+      });
+
+      await axiosInstance.post(API_PATHS.SESSION.SUBMIT(sessionId), {
+        answers: answerMap,
+      });
+
+      toast.success("✅ Submitted successfully!");
+      fetchSessionDetailsById(); // reload session state
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "❌ Submission failed.");
+      console.error("Submission error:", err);
+    }
   };
 
   // Fetch session data by session id
@@ -64,6 +123,14 @@ const InterviewPrep = () => {
       if (response.data && response.data.session) {
         const session = response.data.session;
         setSessionData(session);
+        
+        // Set timer from session data
+        if (session.remainingTime !== undefined) {
+          setTimer(session.remainingTime);
+          if (session.remainingTime <= 0) {
+            setIsTimerExpired(true);
+          }
+        }
       
         // ✅ Calculate score only if submitted
         if (session.isFinalSubmitted) {
@@ -71,6 +138,8 @@ const InterviewPrep = () => {
             (q) => q.userAnswer && q.userAnswer === q.answer
           ).length;
           setScore(correct);
+          // Stop timer if session is already submitted
+          setIsTimerStopped(true);
         }
       }
     } catch (error) {
@@ -212,9 +281,12 @@ const InterviewPrep = () => {
         {/* left panel: Mini Map */}
         <div className="container w-1/4 max-h-[80vh] sticky flex flex-col items-center top-20">
           {/* Timer display */}
-          <div className="mb-4 mt-8 text-4xl font-bold text-orange-500">
-            {formatTimer(timer)}
-          </div>
+          <Timer 
+            initialTime={timer}
+            onExpire={() => setIsTimerExpired(true)}
+            className="mb-4 mt-8"
+            isStopped={isTimerStopped}
+          />
           {sessionData?.questions && sessionData.questions.length > 0 && (
             <div className="bg-transparent rounded-lg p-4 mt-4">
               {/* <h3 className="text-md font-semibold mb-3">Mini Map</h3> */}
@@ -392,30 +464,7 @@ const InterviewPrep = () => {
             <div className="flex justify-center mt-8">
               <button
                 className="bg-black text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors"
-                onClick={async () => {
-                  const confirmed = window.confirm("Do you want to submit?");
-                  if (!confirmed) return;
-
-                  try {
-                    const answerMap = {};
-                    sessionData.questions.forEach((q) => {
-                      if (q.userAnswer) {
-                        answerMap[q._id] = q.userAnswer;
-                      }
-                    });
-
-                    // ✅ This is the exact line you're asking about
-                    await axiosInstance.post(API_PATHS.SESSION.SUBMIT(sessionId), {
-                      answers: answerMap,
-                    });
-
-                    toast.success("✅ Submitted successfully!");
-                    fetchSessionDetailsById(); // reload session state
-                  } catch (err) {
-                    toast.error(err?.response?.data?.message || "❌ Submission failed.");
-                    console.error("Submission error:", err);
-                  }
-                }}
+                onClick={() => setShowSubmitConfirmation(true)}
               >
                 Final Submit
               </button>
@@ -521,6 +570,17 @@ const InterviewPrep = () => {
         <LuArrowUp className="text-3xl" />
       </button>
     )}
+
+    {/* Confirmation Modal */}
+    <ConfirmationModal
+      isOpen={showSubmitConfirmation}
+      onClose={() => setShowSubmitConfirmation(false)}
+      onConfirm={handleFinalSubmit}
+      title="Final Submit"
+      message="Do you want to final submit this session? This action cannot be undone."
+      confirmText="Yes, Submit"
+      cancelText="Cancel"
+    />
     </DashboardLayout>
   );
 };

@@ -34,6 +34,7 @@ const questionRoutes = require('./routes/questionRoutes');
 const actualRoutes = require('./routes/actualRoutes');
 const { protect } = require("./middlewares/authMiddleware");
 const { generateInterviewQuestions, generateConceptExplanation, generateFeedback, checkAnswerWithAI } = require("./controllers/aiController");
+const { checkAndAutoSubmitExpiredSessions } = require("./utils/timerUtils");
 
 const app = express();
 
@@ -67,4 +68,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"), {}));
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Check for expired sessions every 30 seconds
+setInterval(checkAndAutoSubmitExpiredSessions, 30000);

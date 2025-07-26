@@ -155,12 +155,12 @@ const generateConceptExplanation = async (req, res) => {
 // @access  Private
 const generateFeedback = async (req, res) => {
   try {
-    const { role, experience, topicsToFocus, questions } = req.body;
+    const { role, experience, topicsToFocus, questions, submissionTime } = req.body;
     if (!role || !experience || !topicsToFocus || !questions || !Array.isArray(questions)) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const prompt = feedbackPrompt(role, experience, topicsToFocus, questions);
+    const prompt = feedbackPrompt(role, experience, topicsToFocus, questions, submissionTime);
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-lite",
       contents: prompt,
