@@ -39,3 +39,16 @@
 .animate-text-shine {
   animation: text-shine 3s ease-in-out infinite alternate;
 }
+
+/* 3D Card Perspective */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
