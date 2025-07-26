@@ -10,6 +10,8 @@ import QuestionCard from "../../components/Cards/QuestionCard";
 import SummaryCard from "../../components/Cards/SummaryCard";
 import { CARD_BG } from "../../utils/data";
 import { useNavigate } from "react-router-dom";
+import DeleteAlertContent from "../../components/DeleteAlertContent";
+import { toast } from "react-toastify";
 
 const InterviewTest = () => {
   const [sessions, setSessions] = useState([]);
@@ -24,6 +26,7 @@ const InterviewTest = () => {
   const [error, setError] = useState(null);
   const [expandedSessionId, setExpandedSessionId] = useState(null);
   const navigate = useNavigate();
+  const [openDeleteAlert, setOpenDeleteAlert] = useState({ open: false, data: null });
 
   const fetchSessions = async () => {
     setIsLoading(true);
@@ -65,6 +68,17 @@ const InterviewTest = () => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const deleteSession = async (sessionData) => {
+    try {
+      await axiosInstance.delete(API_PATHS.ACTUAL.DELETE(sessionData?._id));
+      toast.success("Session Deleted Successfully");
+      setOpenDeleteAlert({ open: false, data: null });
+      fetchSessions();
+    } catch (error) {
+      toast.error("Error deleting session");
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto pt-4 pb-4">
@@ -81,7 +95,7 @@ const InterviewTest = () => {
                 description={data.description}
                 lastUpdated={data.updatedAt?.slice(0, 10)}
                 onSelect={() => navigate(`/interview-test/${data._id}`)}
-                onDelete={() => {}}
+                onDelete={() => setOpenDeleteAlert({ open: true, data })}
               />
               {expandedSessionId === data._id && data.questions && (
                 <div className="mt-4">
@@ -159,6 +173,18 @@ const InterviewTest = () => {
                 {isLoading ? <SpinnerLoader /> : "Add Session"}
               </button>
             </form>
+          </div>
+        </Modal>
+        <Modal
+          isOpen={openDeleteAlert?.open}
+          onClose={() => setOpenDeleteAlert({ open: false, data: null })}
+          title="Delete Alert"
+        >
+          <div className="w-[30vw]">
+            <DeleteAlertContent
+              content="Are you sure you want to delete this session detail?"
+              onDelete={() => deleteSession(openDeleteAlert.data)}
+            />
           </div>
         </Modal>
       </div>

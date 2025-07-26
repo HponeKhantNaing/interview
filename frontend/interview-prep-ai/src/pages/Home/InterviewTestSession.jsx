@@ -7,6 +7,7 @@ import SpinnerLoader from "../../components/Loader/SpinnerLoader";
 import QuestionCard from "../../components/Cards/QuestionCard";
 import moment from "moment";
 import RoleInfoHeader from "../InterviewPrep/components/RoleInfoHeader";
+import { toast } from "react-hot-toast";
 
 const QUESTIONS_PER_PAGE = 5;
 
@@ -19,6 +20,11 @@ const InterviewTestSession = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [scrollToQuestionId, setScrollToQuestionId] = useState(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isFinalSubmitted, setIsFinalSubmitted] = useState(false);
+  const [userFeedbackInput, setUserFeedbackInput] = useState("");
+  const [isSavingUserFeedback, setIsSavingUserFeedback] = useState(false);
+  const [userFeedbackSaved, setUserFeedbackSaved] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const fetchSession = async () => {
     setIsLoading(true);
@@ -36,6 +42,64 @@ const InterviewTestSession = () => {
     fetchSession();
     // eslint-disable-next-line
   }, [sessionId]);
+
+  useEffect(() => {
+    if (session) setIsFinalSubmitted(session.isFinalSubmitted);
+  }, [session]);
+
+  // Autosave answer
+  const handleAnswerChange = (questionId, value) => {
+    setSession((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q) =>
+        q._id === questionId ? { ...q, userAnswer: value } : q
+      ),
+    }));
+    // Debounced save
+    if (window.saveTimeout) clearTimeout(window.saveTimeout);
+    window.saveTimeout = setTimeout(() => {
+      axiosInstance.post(API_PATHS.ACTUAL.ANSWER(questionId), { answer: value });
+    }, 600);
+  };
+
+  // Final submit
+  const handleFinalSubmit = async () => {
+    const confirmed = window.confirm("Do you want to submit?");
+    if (!confirmed) return;
+    try {
+      const answerMap = {};
+      session.questions.forEach((q) => {
+        if (q.userAnswer) {
+          answerMap[q._id] = q.userAnswer;
+        }
+      });
+      await axiosInstance.post(API_PATHS.ACTUAL.SUBMIT(sessionId), {
+        answers: answerMap,
+      });
+      toast.success("✅ Submitted successfully!");
+      fetchSession();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "❌ Submission failed.");
+    }
+  };
+
+  // Save user feedback
+  const handleUserFeedback = async (e) => {
+    e.preventDefault();
+    setIsSavingUserFeedback(true);
+    try {
+      await axiosInstance.post(API_PATHS.ACTUAL.USER_FEEDBACK(sessionId), {
+        userFeedback: userFeedbackInput,
+      });
+      toast.success("Your feedback has been saved!");
+      setUserFeedbackSaved(true);
+      fetchSession();
+    } catch (err) {
+      toast.error("Failed to save feedback");
+    } finally {
+      setIsSavingUserFeedback(false);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -197,41 +261,130 @@ const InterviewTestSession = () => {
                   question={data.question}
                   answer={data.answer}
                   userAnswer={data.userAnswer}
-                  isFinalSubmitted={false}
+                  isFinalSubmitted={isFinalSubmitted}
                   id={`question-card-${data._id}`}
                   questionNumber={startIdx + index + 1}
                   type={data.type}
+                  onChangeAnswer={(val) => handleAnswerChange(data._id, val)}
                 />
               ));
             })()}
 
-            {session.questions && session.questions.length > QUESTIONS_PER_PAGE && (
-              <div className="flex justify-center mt-6 gap-2">
+            {/* Final Submit Button */}
+            {!isFinalSubmitted && session.questions?.length > 0 && (
+              <div className="flex justify-center mt-8">
                 <button
-                  className="px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-50"
-                  onClick={() => {
-                    setCurrentPage((prev) => Math.max(prev - 1, 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={currentPage === 1}
+                  className="bg-black text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors"
+                  onClick={handleFinalSubmit}
                 >
-                  Previous
+                  Final Submit
                 </button>
-                <span className="px-2 py-1 font-medium">
-                  Page {currentPage} of {Math.ceil(session.questions.length / QUESTIONS_PER_PAGE)}
-                </span>
+              </div>
+            )}
+
+            {/* Feedback Section */}
+            {isFinalSubmitted && session.feedback && (
+              <div className="flex justify-center mt-8">
                 <button
-                  className="px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-50"
-                  onClick={() => {
-                    setCurrentPage((prev) =>
-                      Math.min(prev + 1, Math.ceil(session.questions.length / QUESTIONS_PER_PAGE))
-                    );
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={currentPage === Math.ceil(session.questions.length / QUESTIONS_PER_PAGE)}
+                  className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors"
+                  onClick={() => navigate(`/interview-test/${sessionId}/feedback`)}
                 >
-                  Next
+                  Show Feedback
                 </button>
+              </div>
+            )}
+
+            {/* User Feedback Form */}
+            {isFinalSubmitted && (
+              <div className="mt-8 p-6 rounded-lg bg-white border border-gray-200">
+                <h3 className="text-lg font-bold mb-2 text-orange-600">Your Feedback</h3>
+                {session.userFeedback ? (
+                  <div className="mb-2">
+                    <div className="text-gray-700">{session.userFeedback}</div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleUserFeedback}>
+                    <textarea
+                      className="w-full border border-gray-300 rounded p-2 mb-2"
+                      rows={4}
+                      placeholder="Share your thoughts about this session..."
+                      value={userFeedbackInput}
+                      onChange={(e) => setUserFeedbackInput(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors"
+                      disabled={isSavingUserFeedback || !userFeedbackInput.trim()}
+                    >
+                      {isSavingUserFeedback ? "Saving..." : "Submit Feedback"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* Feedback Modal/Page */}
+            {showFeedback && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                <div className="bg-white rounded-lg p-8 max-w-xl w-full relative">
+                  <button
+                    className="absolute top-2 right-2 text-gray-500 hover:text-black"
+                    onClick={() => setShowFeedback(false)}
+                  >
+                    ×
+                  </button>
+                  <h3 className="text-xl font-bold mb-4 text-orange-600">Feedback</h3>
+                  {session.feedback?.skillsBreakdown && (
+                    <div className="mb-4">
+                      <h4 className="font-semibold mb-2">Skills Breakdown</h4>
+                      {(() => {
+                        const breakdown = session.feedback.skillsBreakdown;
+                        const totalScore = breakdown.reduce((sum, item) => sum + (item.score || 0), 0);
+                        const maxScore = breakdown.length * 5;
+                        const percent = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+                        return (
+                          <div className="mb-2 text-sm font-semibold text-green-700">
+                            Overall: {percent}%
+                          </div>
+                        );
+                      })()}
+                      <ul className="list-disc list-inside">
+                        {session.feedback.skillsBreakdown.map((item, idx) => (
+                          <li key={idx}>
+                            <span className="font-medium">{item.skill}:</span> <span className="text-blue-700">{item.score}/5</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {session.feedback?.strengths && (
+                    <div className="mb-4">
+                      <h4 className="font-semibold mb-2">Strengths</h4>
+                      <ul className="list-disc list-inside">
+                        {session.feedback.strengths.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {session.feedback?.areasForImprovement && (
+                    <div className="mb-4">
+                      <h4 className="font-semibold mb-2">Areas for Improvement</h4>
+                      <ul className="list-disc list-inside">
+                        {session.feedback.areasForImprovement.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {session.feedback?.summary && (
+                    <div className="mb-4">
+                      <h4 className="font-semibold mb-2">Summary</h4>
+                      <p>{session.feedback.summary}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -14,6 +14,7 @@ export const API_PATHS = {
   AI: {
     GENERATE_QUESTIONS: "/api/ai/generate-questions", // Generate interview questions and answers using Gemini
     GENERATE_EXPLANATION: "/api/ai/generate-explanation", // Generate concept explanation using Gemini
+    GENERATE_FEEDBACK: "/api/ai/generate-feedback", // Generate feedback for session
   },
 
   SESSION: {
@@ -38,5 +39,9 @@ export const API_PATHS = {
     CREATE: "/api/actual/create",
     GET_ALL: "/api/actual/my-sessions",
     GET_ONE: (id) => `/api/actual/${id}`,
+    ANSWER: (id) => `/api/actual/answer/${id}`,
+    SUBMIT: (id) => `/api/actual/${id}/submit`,
+    USER_FEEDBACK: (id) => `/api/actual/${id}/user-feedback`,
+    DELETE: (id) => `/api/actual/${id}`,
   },
 };

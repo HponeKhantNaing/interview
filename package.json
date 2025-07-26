@@ -4,6 +4,7 @@
     "axios": "^1.11.0",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^3.11.174",
+    "react-toastify": "^11.0.5",
     "string-similarity": "^4.0.4"
   }
 }

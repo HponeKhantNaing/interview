@@ -8,6 +8,7 @@ import InterviewPrep from "./pages/InterviewPrep/InterviewPrep";
 import Feedback from "./pages/InterviewPrep/Feedback";
 import InterviewTest from "./pages/Home/InterviewTest";
 import InterviewTestSession from "./pages/Home/InterviewTestSession";
+import InterviewTestFeedback from "./pages/Home/InterviewTestFeedback";
 import UserProvider from "./context/userContext";
 
 const App = () => {
@@ -35,6 +36,10 @@ const App = () => {
             <Route
               path="/interview-test/:sessionId"
               element={<InterviewTestSession />}
+            />
+            <Route
+              path="/interview-test/:sessionId/feedback"
+              element={<InterviewTestFeedback />}
             />
           </Routes>
         </Router>
