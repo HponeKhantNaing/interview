@@ -200,46 +200,80 @@ exports.finalSubmitSession = async (req, res) => {
     }));
 
     // Generate feedback using AI
-    let feedback = null;
-    try {
-      // Use the same req/res pattern as other controllers
-      const feedbackRes = await new Promise((resolve, reject) => {
-        generateFeedback({
-          body: {
-            role: session.role,
-            experience: session.experience,
-            topicsToFocus: session.topicsToFocus,
-            questions: questionsForFeedback,
-            submissionTime: submissionTime
-          }
-        }, {
-          status: (code) => ({
-            json: (data) => code === 200 ? resolve(data) : reject(data)
-          })
-        });
+    const feedbackPrompt = require('../utils/prompts').feedbackPrompt;
+    const prompt = feedbackPrompt(session.role, session.experience, session.topicsToFocus, questionsForFeedback, submissionTime);
+    
+    // Debug log to see what data is being sent
+    console.log('=== DEBUG: Questions for feedback ===');
+    questionsForFeedback.forEach((q, index) => {
+      console.log(`Question ${index + 1}:`, {
+        question: q.question,
+        userAnswer: q.userAnswer,
+        hasAnswer: q.userAnswer && q.userAnswer.trim() !== '',
+        answerLength: q.userAnswer ? q.userAnswer.length : 0
       });
-      feedback = feedbackRes;
-      
-      // Validate feedback - if no answers provided, force all scores to 0
-      const hasAnyAnswers = questionsForFeedback.some(q => q.userAnswer && q.userAnswer.trim() !== "");
-      if (!hasAnyAnswers && feedback && feedback.skillsBreakdown) {
-        feedback.skillsBreakdown = feedback.skillsBreakdown.map(skill => ({
-          ...skill,
-          score: 0
-        }));
-        feedback.strengths = [];
-        feedback.areasForImprovement = ["No answers were provided", "Complete all questions to get meaningful feedback"];
-        feedback.summary = "No answers were provided for this session. Please complete all questions to receive proper feedback.";
+    });
+    console.log('=== END DEBUG ===');
+    
+    // Call AI directly
+    const { GoogleGenAI } = require("@google/genai");
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-lite",
+      contents: prompt,
+    });
+    
+    let rawText = response.text;
+    const cleanedText = rawText
+      .replace(/^```json\s*/, "")
+      .replace(/```$/, "")
+      .trim();
+    const feedbackResponse = JSON.parse(cleanedText);
+
+    // Validate feedback - only force 0 scores if ALL answers are empty
+    const hasAnyAnswers = questionsForFeedback.some(q => q.userAnswer && q.userAnswer.trim() !== "");
+    const answeredCount = questionsForFeedback.filter(q => q.userAnswer && q.userAnswer.trim() !== "").length;
+    
+    if (!hasAnyAnswers && feedbackResponse && feedbackResponse.skillsBreakdown) {
+      // No answers provided - force all scores to 0
+      feedbackResponse.skillsBreakdown = feedbackResponse.skillsBreakdown.map(skill => ({
+        ...skill,
+        score: 0
+      }));
+      feedbackResponse.strengths = [];
+      feedbackResponse.areasForImprovement = ["No answers were provided", "Complete all questions to get meaningful feedback"];
+      feedbackResponse.summary = "No answers were provided for this session. Please complete all questions to receive proper feedback.";
+    } else if (hasAnyAnswers && feedbackResponse) {
+      // Some answers provided - ensure feedback is constructive
+      // Only override if AI returns the exact fallback response
+      const exactFallback = feedbackResponse.summary === "No answers were provided for this session. Please complete all questions to receive proper feedback.";
+      if (exactFallback) {
+        feedbackResponse.summary = `You answered ${answeredCount} out of ${questionsForFeedback.length} questions. Continue practicing to improve your skills.`;
+        feedbackResponse.strengths = ["You made an effort to answer questions", "Partial completion shows initiative"];
+        feedbackResponse.areasForImprovement = ["Complete more questions for comprehensive feedback", "Practice answering all questions to improve"];
+        if (feedbackResponse.skillsBreakdown && feedbackResponse.skillsBreakdown.every(skill => skill.score === 0)) {
+          feedbackResponse.skillsBreakdown[0].score = 1;
+        }
+      } else {
+        // AI provided legitimate feedback - only fill in missing fields
+        if (!feedbackResponse.strengths || feedbackResponse.strengths.length === 0) {
+          feedbackResponse.strengths = ["You made an effort to answer questions", "Partial completion shows initiative"];
+        }
+        if (!feedbackResponse.areasForImprovement || feedbackResponse.areasForImprovement.length === 0) {
+          feedbackResponse.areasForImprovement = ["Complete more questions for comprehensive feedback", "Practice answering all questions to improve"];
+        }
+        // Only set skill score to 1 if ALL are 0 AND AI didn't provide legitimate feedback
+        if (feedbackResponse.skillsBreakdown && feedbackResponse.skillsBreakdown.every(skill => skill.score === 0) && exactFallback) {
+          feedbackResponse.skillsBreakdown[0].score = 1;
+        }
       }
-    } catch (err) {
-      feedback = { error: "Failed to generate feedback" };
     }
 
     // Save feedback to session
-    session.feedback = feedback;
+    session.feedback = feedbackResponse;
     await session.save();
 
-    res.status(200).json({ message: "Submitted successfully", score, feedback });
+    res.status(200).json({ message: "Submitted successfully", score, feedback: feedbackResponse });
   } catch (error) {
     console.error("Final submit error:", error);
     res.status(500).json({ message: "Server error", error: error.message });

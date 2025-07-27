@@ -472,8 +472,12 @@ const InterviewPrep = () => {
           )}
   
             {sessionData?.isFinalSubmitted && (
-            <div className="text-center mt-6 text-green-600 font-medium">
-               This session has been submitted. You may only review your answers.
+            <div className="text-center mt-6 px-4 py-2 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300 backdrop-blur-sm">
+              <div className="text-blue-800 font-medium text-sm flex items-center justify-center gap-2">
+                <span className="text-blue-600"></span>
+                This session has been submitted. You may only review your answers.
+                <span className="text-blue-600"></span>
+              </div>
             </div>
           )}
 

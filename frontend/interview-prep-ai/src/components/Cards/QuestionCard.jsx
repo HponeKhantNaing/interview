@@ -22,7 +22,8 @@ const QuestionCard = ({
   isFinalSubmitted,
   id,
   questionNumber, // <-- add prop
-  type // <-- add type prop
+  type, // <-- add type prop
+  customApiEndpoint // <-- add custom API endpoint prop
 }) => {
   const [userAnswer, setUserAnswer] = useState(initialAnswer || "");
   // Remove isSaved, isSaving, editMode
@@ -39,14 +40,16 @@ const QuestionCard = ({
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
       if (userAnswer !== initialAnswer) {
-        axiosInstance.post(API_PATHS.QUESTION.ANSWER(questionId), {
+        // Use custom endpoint if provided, otherwise use default
+        const endpoint = customApiEndpoint || API_PATHS.QUESTION.ANSWER(questionId);
+        axiosInstance.post(endpoint, {
           answer: userAnswer,
         });
       }
     }, 600); // 600ms debounce
     return () => clearTimeout(saveTimeout.current);
     // eslint-disable-next-line
-  }, [userAnswer, isFinalSubmitted, questionId]);
+  }, [userAnswer, isFinalSubmitted, questionId, customApiEndpoint]);
 
   // Remove saveAnswer and related logic
 

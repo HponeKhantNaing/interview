@@ -60,18 +60,34 @@ const feedbackPrompt = (role, experience, topicsToFocus, questions, submissionTi
     ${submissionTime ? `- Submission Time: ${submissionTime} seconds (${Math.floor(submissionTime / 60)} minutes ${submissionTime % 60} seconds)` : ''}
 
     CRITICAL RULES:
-    1. Check if ANY answers are provided. If all userAnswer fields are empty, null, or undefined, then ALL scores must be 0.
-    2. If even one question has a non-empty answer, evaluate only that question and score others as 0.
-    3. Empty answers, null answers, or answers with only whitespace should be treated as NO ANSWER.
+    1. ALWAYS check each question's userAnswer field. An answer is considered valid if:
+       - userAnswer is not null, undefined, or empty string
+       - userAnswer is not just whitespace
+       - userAnswer has actual content
+    2. If ANY question has a valid userAnswer, you MUST provide detailed feedback based on those answers.
+    3. NEVER return the "No answers were provided" fallback if ANY question has a valid userAnswer.
+    4. Only return the fallback if ALL userAnswer fields are empty, null, undefined, or just whitespace.
+    5. Provide fair and constructive feedback that can guide the user's improvement.
+
+    VALIDATION STEPS:
+    1. Count questions with valid userAnswer (not empty, not null, not undefined, not just whitespace)
+    2. If count = 0: Return fallback response
+    3. If count > 0: Provide detailed feedback based on answered questions
 
     Task:
-    1. First, count how many questions have actual answers (non-empty userAnswer).
-    2. If count is 0 (no answers provided):
+    1. First, count how many questions have valid answers (non-empty userAnswer with actual content).
+    2. If count is 0 (no valid answers provided):
        - Set ALL skill scores to 0
        - Set strengths to empty array []
        - Set areasForImprovement to ["No answers were provided", "Complete all questions to get meaningful feedback"]
        - Set summary to "No answers were provided for this session. Please complete all questions to receive proper feedback."
-    3. If count > 0, evaluate only the answered questions and score unanswered as 0.
+    3. If count > 0 (even just 1 valid answer):
+       - Evaluate the answered questions thoroughly
+       - Score unanswered questions as 0
+       - Provide realistic strengths based on the answered questions
+       - Give constructive areas for improvement
+       - Create a detailed summary that acknowledges the answers provided
+       - Score skills based on the quality of answered questions (1-5 scale)
     4. Provide a breakdown of their skills with appropriate scores (0-5).
     5. Include submission time information in the summary if provided.
     6. Return the result as a valid JSON object in the following format:
@@ -80,18 +96,27 @@ const feedbackPrompt = (role, experience, topicsToFocus, questions, submissionTi
       "skillsBreakdown": [
         { "skill": "Technical Knowledge", "score": 0 },
         { "skill": "Problem Solving", "score": 0 },
-        { "skill": "Communication", "score": 0 }
+        { "skill": "Communication", "score": 0 },
+        { "skill": "Code Quality", "score": 0 },
+        { "skill": "System Design", "score": 0 }
       ],
       "strengths": [],
-      "areasForImprovement": ["No answers were provided", "Complete all questions to get meaningful feedback"],
-      "summary": "No answers were provided for this session. Please complete all questions to receive proper feedback."
+      "areasForImprovement": [],
+      "summary": "Detailed summary of performance"
     }
 
-    IMPORTANT: 
-    - If ALL userAnswer fields are empty/null/undefined, ALL scores must be 0.
-    - Do NOT give high scores for empty answers.
-    - If submission time is provided, mention it in the summary (e.g., "Session completed in X minutes Y seconds").
+    FEEDBACK GUIDELINES:
+    - If only 1-2 questions answered: Acknowledge the effort, provide specific feedback on answered questions, encourage completing more questions
+    - If 3-5 questions answered: Provide balanced feedback, highlight strengths, suggest improvements
+    - If 6+ questions answered: Comprehensive analysis with detailed strengths and areas for improvement
+    - Always be constructive and encouraging, even for partial submissions
+    - Provide specific, actionable feedback that can guide learning
+    - Consider the role and experience level when giving feedback
+    - If submission time is provided, mention it in the summary (e.g., "Session completed in X minutes Y seconds")
+    - Score skills realistically: 1=poor, 2=below average, 3=average, 4=good, 5=excellent
     - Only return valid JSON. Do NOT add any extra text outside the JSON format.
+    
+    REMEMBER: If ANY question has a non-empty userAnswer with content, you MUST provide feedback. Never return the fallback response unless ALL answers are truly empty.
 `;
 
 const checkAnswerPrompt = (question, userAnswer, correctAnswer) => `

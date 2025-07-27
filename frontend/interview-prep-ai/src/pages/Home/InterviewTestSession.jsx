@@ -115,21 +115,6 @@ const InterviewTestSession = () => {
     }
   }, [session]);
 
-  // Autosave answer
-  const handleAnswerChange = (questionId, value) => {
-    setSession((prev) => ({
-      ...prev,
-      questions: prev.questions.map((q) =>
-        q._id === questionId ? { ...q, userAnswer: value } : q
-      ),
-    }));
-    // Debounced save
-    if (window.saveTimeout) clearTimeout(window.saveTimeout);
-    window.saveTimeout = setTimeout(() => {
-      axiosInstance.post(API_PATHS.ACTUAL.ANSWER(questionId), { answer: value });
-    }, 600);
-  };
-
   // Final submit
   const handleFinalSubmit = async () => {
     try {
@@ -193,6 +178,7 @@ const InterviewTestSession = () => {
 
   return (
     <DashboardLayout>
+      
       <RoleInfoHeader
         role={session?.role || ""}
         topicsToFocus={session?.topicsToFocus || ""}
@@ -270,6 +256,9 @@ const InterviewTestSession = () => {
         <div className="container w-3/4 flex-1 flex flex-col pt-4 pb-4 px-6 md:px-8">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold color-black">Interview Q & A</h2>
+            <div className="flex items-center space-x-4">
+              
+            </div>
             {session.questions && session.questions.length > QUESTIONS_PER_PAGE && (
               <div className="flex items-center gap-1">
                 <button
@@ -340,7 +329,7 @@ const InterviewTestSession = () => {
                   id={`question-card-${data._id}`}
                   questionNumber={startIdx + index + 1}
                   type={data.type}
-                  onChangeAnswer={(val) => handleAnswerChange(data._id, val)}
+                  customApiEndpoint={API_PATHS.ACTUAL.ANSWER(data._id)}
                 />
               ));
             })()}
@@ -354,6 +343,17 @@ const InterviewTestSession = () => {
                 >
                   Final Submit
                 </button>
+              </div>
+            )}
+
+            {/* Submission Message */}
+            {isFinalSubmitted && (
+              <div className="text-center mt-6 px-4 py-2 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300 backdrop-blur-sm">
+                <div className="text-blue-800 font-medium text-sm flex items-center justify-center gap-2">
+                  <span className="text-blue-600"></span>
+                  This session has been submitted. You may only review your answers.
+                  <span className="text-blue-600"></span>
+                </div>
               </div>
             )}
 
