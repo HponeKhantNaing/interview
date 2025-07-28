@@ -5,24 +5,101 @@ const path = require("path");
 const { generateFeedback } = require("./aiController");
 const { calculateRemainingTime } = require("../utils/timerUtils");
 
-function pickDataset(role) {
-  const r = role.toLowerCase();
-  if (r.includes("fullstack")) return "dataset_fullstack.json";
-  if (r.includes("front")) return "dataset_frontend.json";
-  if (r.includes("back")) return "dataset_backend.json";
+function pickDataset(role, topicsToFocus) {
+  const roleLower = role.toLowerCase();
+  const topics = topicsToFocus ? topicsToFocus.split(",").map(t => t.trim().toLowerCase()) : [];
+  
+  // Topic to dataset mapping
+  const topicToDataset = {
+    'java': 'dataset_java.json',
+    'data analytics': 'dataset_data_analytics.json',
+    'data structures': 'dataset_dsa.json',
+    'algorithms': 'dataset_dsa.json',
+    'dsa': 'dataset_dsa.json',
+    'programming languages': 'dataset_programming_languages.json',
+    'python': 'dataset_programming_languages.json',
+    'javascript': 'dataset_programming_languages.json',
+    'typescript': 'dataset_programming_languages.json',
+    'web development': 'dataset_web_development.json',
+    'html': 'dataset_web_development.json',
+    'css': 'dataset_web_development.json',
+    'react': 'dataset_web_development.json',
+    'frontend': 'dataset_frontend.json',
+    'backend': 'dataset_backend.json',
+    'node.js': 'dataset_backend.json',
+    'express': 'dataset_backend.json',
+    'fullstack': 'dataset_fullstack.json',
+    'databases': 'dataset_databases.json',
+    'sql': 'dataset_databases.json',
+    'nosql': 'dataset_databases.json',
+    'mongodb': 'dataset_databases.json',
+    'testing': 'dataset_testing.json',
+    'unit testing': 'dataset_testing.json',
+    'system design': 'dataset_system_design.json',
+    'architecture': 'dataset_system_design.json',
+    'microservices': 'dataset_system_design.json',
+    'security': 'dataset_security.json',
+    'authentication': 'dataset_security.json',
+    'devops': 'dataset_devops.json',
+    'docker': 'dataset_devops.json',
+    'kubernetes': 'dataset_devops.json',
+    'ci/cd': 'dataset_devops.json'
+  };
+
+  // First, try to match by topics
+  for (const topic of topics) {
+    for (const [topicKey, datasetFile] of Object.entries(topicToDataset)) {
+      if (topic.includes(topicKey) || topicKey.includes(topic)) {
+        return datasetFile;
+      }
+    }
+  }
+
+  // Fallback to role-based matching
+  if (roleLower.includes("java")) return "dataset_java.json";
+  if (roleLower.includes("data") || roleLower.includes("analytics")) return "dataset_data_analytics.json";
+  if (roleLower.includes("fullstack")) return "dataset_fullstack.json";
+  if (roleLower.includes("front")) return "dataset_frontend.json";
+  if (roleLower.includes("back")) return "dataset_backend.json";
+  if (roleLower.includes("dsa") || roleLower.includes("algorithms")) return "dataset_dsa.json";
+  if (roleLower.includes("programming") || roleLower.includes("python") || roleLower.includes("javascript")) return "dataset_programming_languages.json";
+  if (roleLower.includes("web") || roleLower.includes("html") || roleLower.includes("css")) return "dataset_web_development.json";
+  if (roleLower.includes("database") || roleLower.includes("sql")) return "dataset_databases.json";
+  if (roleLower.includes("test")) return "dataset_testing.json";
+  if (roleLower.includes("system") || roleLower.includes("architecture")) return "dataset_system_design.json";
+  if (roleLower.includes("security")) return "dataset_security.json";
+  if (roleLower.includes("devops") || roleLower.includes("docker")) return "dataset_devops.json";
+  
+  // Default fallback
   return "dataset_fullstack.json";
 }
 
 function filterAndSampleQuestions(dataset, topics, count = 5) {
+  console.log('Filtering questions with topics:', topics);
+  
   // Filter questions by topics, then randomly sample up to count
   const topicSet = new Set(topics.map(t => t.trim().toLowerCase()));
-  const filtered = dataset.filter(q =>
-    q.topics.some(topic => topicSet.has(topic.toLowerCase()))
-  );
-  // If not enough, fallback to random
+  console.log('Topic set:', Array.from(topicSet));
+  
+  const filtered = dataset.filter(q => {
+    const questionTopics = q.topics.map(topic => topic.toLowerCase());
+    const hasMatchingTopic = questionTopics.some(topic => 
+      topicSet.has(topic) || Array.from(topicSet).some(userTopic => 
+        topic.includes(userTopic) || userTopic.includes(topic)
+      )
+    );
+    return hasMatchingTopic;
+  });
+  
+  console.log(`Filtered ${filtered.length} questions out of ${dataset.length} total questions`);
+  
+  // If not enough filtered questions, fallback to random
   const pool = filtered.length >= count ? filtered : dataset;
   const shuffled = pool.sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
+  const selected = shuffled.slice(0, count);
+  
+  console.log(`Selected ${selected.length} questions for the session`);
+  return selected;
 }
 
 // @desc    Create a new Actual interview test session
@@ -32,13 +109,35 @@ exports.createActualSession = async (req, res) => {
   try {
     const { role, experience, topicsToFocus, description } = req.body;
     const userId = req.user._id;
-    // Pick dataset file
-    const datasetFile = pickDataset(role);
+    
+    console.log('Creating actual session with:', { role, experience, topicsToFocus, description });
+    
+    // Pick dataset file based on role and topics
+    const datasetFile = pickDataset(role, topicsToFocus);
+    console.log('Selected dataset file:', datasetFile);
+    
     const datasetPath = path.join(__dirname, "../utils", datasetFile);
+    console.log('Dataset path:', datasetPath);
+    
+    // Check if dataset file exists
+    if (!fs.existsSync(datasetPath)) {
+      console.error(`Dataset file not found: ${datasetPath}`);
+      return res.status(500).json({ 
+        success: false, 
+        message: `Dataset file ${datasetFile} not found. Please check the server configuration.` 
+      });
+    }
+    
     const dataset = JSON.parse(fs.readFileSync(datasetPath, "utf-8"));
+    console.log(`Loaded ${dataset.length} questions from ${datasetFile}`);
+    
     // Pick questions
     const topics = topicsToFocus.split(",").map(t => t.trim()).filter(Boolean);
+    console.log('Topics to filter by:', topics);
+    
     const selectedQuestions = filterAndSampleQuestions(dataset, topics, 5);
+    console.log(`Selected ${selectedQuestions.length} questions`);
+    
     // Store questions in DB
     const questionDocs = await Promise.all(
       selectedQuestions.map(async (q) => {
@@ -50,6 +149,7 @@ exports.createActualSession = async (req, res) => {
         return question._id;
       })
     );
+    
     const actual = await Actual.create({
       user: userId,
       role,
@@ -58,8 +158,11 @@ exports.createActualSession = async (req, res) => {
       description,
       questions: questionDocs,
     });
+    
+    console.log('Successfully created actual session:', actual._id);
     res.status(201).json({ success: true, actual });
   } catch (error) {
+    console.error("Error creating actual session:", error);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
