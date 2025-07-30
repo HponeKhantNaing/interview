@@ -74,6 +74,22 @@ const InterviewTestSession = () => {
     if (isTimerExpired && session && !session.isFinalSubmitted) {
       const autoSubmit = async () => {
         try {
+          // First, ensure all answers are saved to database
+          const savePromises = session.questions.map(async (q) => {
+            if (q.userAnswer && q.userAnswer.trim() !== '') {
+              try {
+                await axiosInstance.post(API_PATHS.ACTUAL.ANSWER(q._id), {
+                  answer: q.userAnswer,
+                });
+                console.log('Auto-saved actual answer for question:', q._id);
+              } catch (error) {
+                console.error('Failed to auto-save actual answer for question:', q._id, error);
+              }
+            }
+          });
+          
+          await Promise.all(savePromises);
+          
           const answerMap = {};
           session.questions.forEach((q) => {
             // Include all answers (including empty ones) for proper feedback
@@ -120,6 +136,22 @@ const InterviewTestSession = () => {
     try {
       // Stop the timer
       setIsTimerStopped(true);
+      
+      // First, ensure all answers are saved to database
+      const savePromises = session.questions.map(async (q) => {
+        if (q.userAnswer && q.userAnswer.trim() !== '') {
+          try {
+            await axiosInstance.post(API_PATHS.ACTUAL.ANSWER(q._id), {
+              answer: q.userAnswer,
+            });
+            console.log('Saved actual answer for question:', q._id);
+          } catch (error) {
+            console.error('Failed to save actual answer for question:', q._id, error);
+          }
+        }
+      });
+      
+      await Promise.all(savePromises);
       
       const answerMap = {};
       session.questions.forEach((q) => {

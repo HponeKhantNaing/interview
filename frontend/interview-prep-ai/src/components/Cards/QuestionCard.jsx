@@ -28,6 +28,7 @@ const QuestionCard = ({
   const [userAnswer, setUserAnswer] = useState(initialAnswer || "");
   // Remove isSaved, isSaving, editMode
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const [isSaving, setIsSaving] = useState(false);
   const saveTimeout = useRef(null);
 
   useEffect(() => {
@@ -39,14 +40,22 @@ const QuestionCard = ({
     if (isFinalSubmitted) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      if (userAnswer !== initialAnswer) {
+      if (userAnswer !== initialAnswer && userAnswer.trim() !== '') {
         // Use custom endpoint if provided, otherwise use default
         const endpoint = customApiEndpoint || API_PATHS.QUESTION.ANSWER(questionId);
+        console.log('Auto-saving answer for question:', questionId, 'Answer:', userAnswer);
+        setIsSaving(true);
         axiosInstance.post(endpoint, {
           answer: userAnswer,
+        }).then(() => {
+          console.log('Answer saved successfully for question:', questionId);
+          setIsSaving(false);
+        }).catch((error) => {
+          console.error('Failed to save answer for question:', questionId, error);
+          setIsSaving(false);
         });
       }
-    }, 600); // 600ms debounce
+    }, 300); // Reduced to 300ms for faster saving
     return () => clearTimeout(saveTimeout.current);
     // eslint-disable-next-line
   }, [userAnswer, isFinalSubmitted, questionId, customApiEndpoint]);
@@ -55,7 +64,15 @@ const QuestionCard = ({
 
   return (
     <div className="bg-white p-4 px-6 rounded-lg mb-4 shadow-sm" id={id}>
-      <h3 className="text-xl font-bold text-gray-800 mt-2.5">Q{questionNumber}: {question}</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-gray-800 mt-2.5">Q{questionNumber}: {question}</h3>
+        {isSaving && (
+          <div className="text-xs text-blue-600 flex items-center gap-1">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+            Saving...
+          </div>
+        )}
+      </div>
       {/* <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div> */}
 
       {isFinalSubmitted ? (

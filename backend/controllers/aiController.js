@@ -190,19 +190,60 @@ const checkAnswerWithAI = async (req, res) => {
     if (!question || !userAnswer || !correctAnswer) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+    
+    console.log('AI Check Request:', {
+      question: question.substring(0, 100) + '...',
+      userAnswer: userAnswer.substring(0, 100) + '...',
+      correctAnswer: correctAnswer.substring(0, 100) + '...'
+    });
+    
     const prompt = checkAnswerPrompt(question, userAnswer, correctAnswer);
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-lite",
       contents: prompt,
     });
+    
     let rawText = response.text;
+    console.log('AI Raw Response:', rawText);
+    
     const cleanedText = rawText
       .replace(/^```json\s*/, "")
       .replace(/```$/, "")
       .trim();
-    const data = JSON.parse(cleanedText);
+    
+    let data;
+    try {
+      data = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      console.error('Raw text:', rawText);
+      console.error('Cleaned text:', cleanedText);
+      
+      // Fallback: create a simple response based on text similarity
+      const userAnswerLower = userAnswer.toLowerCase().trim();
+      const correctAnswerLower = correctAnswer.toLowerCase().trim();
+      
+      // Simple similarity check
+      const userWords = userAnswerLower.split(/\s+/);
+      const correctWords = correctAnswerLower.split(/\s+/);
+      const commonWords = userWords.filter(word => 
+        word.length > 3 && correctWords.includes(word)
+      );
+      
+      const similarity = commonWords.length / Math.max(userWords.length, correctWords.length);
+      const isRelevant = similarity > 0.3;
+      
+      data = {
+        isCorrect: isRelevant,
+        feedback: isRelevant ? "Answer shows understanding of key concepts" : "Answer needs improvement",
+        correctAnswer: correctAnswer
+      };
+    }
+    
+    console.log('AI Final Response:', data);
     res.status(200).json(data);
   } catch (error) {
+    console.error('AI Check Error:', error);
     res.status(500).json({
       message: "Failed to check answer",
       error: error.message,

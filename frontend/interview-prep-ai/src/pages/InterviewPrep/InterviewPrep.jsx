@@ -67,6 +67,22 @@ const InterviewPrep = () => {
     if (isTimerExpired && sessionData && !sessionData.isFinalSubmitted) {
       const autoSubmit = async () => {
         try {
+          // First, ensure all answers are saved to database
+          const savePromises = sessionData.questions.map(async (q) => {
+            if (q.userAnswer && q.userAnswer.trim() !== '') {
+              try {
+                await axiosInstance.post(API_PATHS.QUESTION.ANSWER(q._id), {
+                  answer: q.userAnswer,
+                });
+                console.log('Auto-saved answer for question:', q._id);
+              } catch (error) {
+                console.error('Failed to auto-save answer for question:', q._id, error);
+              }
+            }
+          });
+          
+          await Promise.all(savePromises);
+          
           const answerMap = {};
           sessionData.questions.forEach((q) => {
             // Include all answers (including empty ones) for proper feedback
@@ -95,6 +111,22 @@ const InterviewPrep = () => {
       // Stop the timer
       setIsTimerStopped(true);
       
+      // First, ensure all answers are saved to database
+      const savePromises = sessionData.questions.map(async (q) => {
+        if (q.userAnswer && q.userAnswer.trim() !== '') {
+          try {
+            await axiosInstance.post(API_PATHS.QUESTION.ANSWER(q._id), {
+              answer: q.userAnswer,
+            });
+            console.log('Saved answer for question:', q._id);
+          } catch (error) {
+            console.error('Failed to save answer for question:', q._id, error);
+          }
+        }
+      });
+      
+      await Promise.all(savePromises);
+      
       const answerMap = {};
       sessionData.questions.forEach((q) => {
         // Include all answers (including empty ones) for proper feedback
@@ -122,6 +154,9 @@ const InterviewPrep = () => {
 
       if (response.data && response.data.session) {
         const session = response.data.session;
+        console.log("Session data:", session);
+        console.log("Session feedback:", session.feedback);
+        console.log("Is final submitted:", session.isFinalSubmitted);
         setSessionData(session);
         
         // Set timer from session data
@@ -486,14 +521,26 @@ const InterviewPrep = () => {
           )}
 
           {/* Feedback Section */}
-          {sessionData?.isFinalSubmitted && sessionData?.feedback && (
+          {sessionData?.isFinalSubmitted && (
             <div className="flex justify-center mt-8">
-              <button
-                className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors"
-                onClick={() => navigate(`/interview-prep/${sessionId}/feedback`)}
-              >
-                Show Feedback
-              </button>
+              {sessionData?.feedback ? (
+                <button
+                  className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors"
+                  onClick={() => navigate(`/interview-prep/${sessionId}/feedback`)}
+                >
+                  Show Feedback
+                </button>
+              ) : (
+                <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded">
+                  <p className="text-yellow-700">Feedback is being generated...</p>
+                  <button
+                    className="mt-2 bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors"
+                    onClick={() => fetchSessionDetailsById()}
+                  >
+                    Refresh
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

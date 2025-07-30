@@ -122,15 +122,22 @@ const feedbackPrompt = (role, experience, topicsToFocus, questions, submissionTi
 const checkAnswerPrompt = (question, userAnswer, correctAnswer) => `
   You are an AI assistant for interview preparation.
   Task:
-  1. Given the following question and a user's answer, determine if the user's answer is semantically relevant and correct for the question, even if the wording, punctuation, or case is different, or if synonyms are used.
-  2. Ignore minor differences in phrasing, synonyms, punctuation, and case. Focus on the meaning and correctness of the answer.
-  3. If the answer is relevant and correct, reply with isRelevant: true and a short feedback message.
-  4. If the answer is not relevant or incorrect, reply with isRelevant: false, a short feedback message, and provide the correct answer.
-  5. Use the provided correct answer for reference.
-  6. Return the result as a valid JSON object in the following format:
+  1. Evaluate if the user's answer demonstrates understanding of the interview question concept.
+  2. This is an INTERVIEW question, so there can be multiple correct approaches and answers.
+  3. Be LENIENT and FAIR in your assessment. Consider the following:
+     - Different approaches to solving the same problem are valid
+     - Alternative explanations of concepts are correct
+     - Different coding styles or implementations are acceptable
+     - Partial answers that show understanding of key concepts are correct
+     - Different terminology or phrasing is acceptable
+     - If the user demonstrates understanding of the core concept, mark as correct
+     - Focus on whether the user understands the concept, not exact wording
+     - Consider that interview questions often have multiple valid solutions
+  4. IMPORTANT: Evaluate if the user's answer shows understanding of the question concept, regardless of exact wording.
+  5. Return the result as a valid JSON object in the following format:
   {
-    "isRelevant": true/false,
-    "feedback": "Short feedback message",
+    "isCorrect": true/false,
+    "feedback": "Short feedback message explaining why it's correct or incorrect",
     "correctAnswer": "The correct answer here"
   }
   Question: "${question}"

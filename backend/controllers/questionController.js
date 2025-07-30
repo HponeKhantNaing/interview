@@ -64,12 +64,18 @@ const updateUserAnswer = async (req, res) => {
     const { id } = req.params;
     const { answer } = req.body;
 
+    console.log('Saving answer for question:', id, 'Answer:', answer);
+
     const question = await Question.findById(id);
-    if (!question) return res.status(404).json({ message: "Question not found" });
+    if (!question) {
+      console.log('Question not found:', id);
+      return res.status(404).json({ message: "Question not found" });
+    }
 
     question.userAnswer = answer;
     await question.save();
 
+    console.log('Answer saved successfully for question:', id);
     res.status(200).json({ message: "Answer saved", question });
   } catch (error) {
     console.error("Save answer error:", error);
