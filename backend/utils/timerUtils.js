@@ -136,15 +136,23 @@ const autoSubmitSession = async (sessionId, sessionType = 'session') => {
         
         // Calculate skill scores based on performance
         const calculateSkillScores = (percentageScore, answeredCount, totalQuestions) => {
-          const baseScore = Math.floor(percentageScore / 20); // Convert percentage to 0-5 scale
-          const maxScore = Math.min(5, Math.max(0, baseScore));
+          // Calculate score based on percentage of total questions
+          let score;
+          if (percentageScore === 0) {
+            score = 0;
+          } else {
+            // Convert percentage to score out of total questions
+            score = Math.round((percentageScore / 100) * totalQuestions);
+            // Ensure score doesn't exceed total questions
+            score = Math.min(score, totalQuestions);
+          }
           
           return [
-            { skill: "Technical Knowledge", score: maxScore },
-            { skill: "Problem Solving", score: maxScore },
-            { skill: "Communication", score: maxScore },
-            { skill: "Code Quality", score: maxScore },
-            { skill: "System Design", score: maxScore }
+            { skill: "Technical Knowledge", score: score, total: totalQuestions },
+            { skill: "Problem Solving", score: score, total: totalQuestions },
+            { skill: "Communication", score: score, total: totalQuestions },
+            { skill: "Code Quality", score: score, total: totalQuestions },
+            { skill: "System Design", score: score, total: totalQuestions }
           ];
         };
         
@@ -192,16 +200,24 @@ const autoSubmitSession = async (sessionId, sessionType = 'session') => {
       } catch (err) {
         console.error("Auto-submission feedback generation failed:", err);
         // Create fallback feedback for auto-submission with proper scoring
-        const fallbackScore = Math.floor(percentageScore / 20);
-        const maxScore = Math.min(5, Math.max(0, fallbackScore));
+        // Calculate score based on percentage of total questions
+        let score;
+        if (percentageScore === 0) {
+          score = 0;
+        } else {
+          // Convert percentage to score out of total questions
+          score = Math.round((percentageScore / 100) * totalQuestions);
+          // Ensure score doesn't exceed total questions
+          score = Math.min(score, totalQuestions);
+        }
         
         session.feedback = {
           skillsBreakdown: [
-            { skill: "Technical Knowledge", score: maxScore },
-            { skill: "Problem Solving", score: maxScore },
-            { skill: "Communication", score: maxScore },
-            { skill: "Code Quality", score: maxScore },
-            { skill: "System Design", score: maxScore }
+            { skill: "Technical Knowledge", score: score, total: totalQuestions },
+            { skill: "Problem Solving", score: score, total: totalQuestions },
+            { skill: "Communication", score: score, total: totalQuestions },
+            { skill: "Code Quality", score: score, total: totalQuestions },
+            { skill: "System Design", score: score, total: totalQuestions }
           ],
           strengths: percentageScore > 0 ? ["Session completed successfully"] : [],
           areasForImprovement: percentageScore === 0 ? ["No answers were provided", "Complete all questions to get meaningful feedback"] : ["AI feedback generation failed", "Please try again later"],

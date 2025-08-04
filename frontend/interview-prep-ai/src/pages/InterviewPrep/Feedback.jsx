@@ -44,24 +44,32 @@ const Feedback = () => {
         {feedback.skillsBreakdown && (
           <div className="mb-4">
             <h4 className="font-semibold mb-2">Skills Breakdown</h4>
-            {/* Overall Percentage Calculation */}
+            {/* Overall Percentage Calculation - Extract from summary text */}
             {(() => {
-              const breakdown = feedback.skillsBreakdown;
-              const totalScore = breakdown.reduce((sum, item) => sum + (item.score || 0), 0);
-              const maxScore = breakdown.length * 5;
-              const percent = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+              // Extract percentage from summary text for accurate overall score
+              let overallPercent = 0;
+              if (feedback.summary) {
+                const match = feedback.summary.match(/(\d+)% accuracy/);
+                if (match) {
+                  overallPercent = parseInt(match[1]);
+                }
+              }
               return (
                 <div className="mb-2 text-sm font-semibold text-green-700">
-                  Overall: {percent}%
+                  Overall: {overallPercent}%
                 </div>
               );
             })()}
             <ul className="list-disc list-inside">
-              {feedback.skillsBreakdown.map((item, idx) => (
-                <li key={idx}>
-                  <span className="font-medium">{item.skill}:</span> <span className="text-blue-700">{item.score}/5</span>
-                </li>
-              ))}
+              {feedback.skillsBreakdown.map((item, idx) => {
+                // Get total from item or fallback to 5 for backward compatibility
+                const total = item.total || 5;
+                return (
+                  <li key={idx}>
+                    <span className="font-medium">{item.skill}:</span> <span className="text-blue-700">{item.score}/{total}</span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
