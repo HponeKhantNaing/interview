@@ -1,9 +1,10 @@
 const express = require('express');
-const { createActualSession, getMyActualSessions, getActualSessionById, saveActualAnswer, finalSubmitActualSession, saveActualUserFeedback, deleteActualSession } = require('../controllers/actualController');
+const { createActualSession, getMyActualSessions, getActualSessionById, saveActualAnswer, finalSubmitActualSession, saveActualUserFeedback, deleteActualSession, getAvailableTopics } = require('../controllers/actualController');
 const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
+router.get('/available-topics', getAvailableTopics); // Public route - no authentication required
 router.post('/create', protect, createActualSession);
 router.get('/my-sessions', protect, getMyActualSessions);
 router.get('/:id', protect, getActualSessionById);

@@ -4,102 +4,133 @@ const fs = require("fs");
 const path = require("path");
 const { generateFeedback } = require("./aiController");
 const { calculateRemainingTime } = require("../utils/timerUtils");
+const { extractAvailableTopics } = require("../utils/extractTopics");
 
 function pickDataset(role, topicsToFocus) {
-  const roleLower = role.toLowerCase();
-  const topics = topicsToFocus ? topicsToFocus.split(",").map(t => t.trim().toLowerCase()) : [];
-  
-  // Topic to dataset mapping
-  const topicToDataset = {
-    'java': 'dataset_java.json',
-    'data analytics': 'dataset_data_analytics.json',
-    'data structures': 'dataset_dsa.json',
-    'algorithms': 'dataset_dsa.json',
-    'dsa': 'dataset_dsa.json',
-    'programming languages': 'dataset_programming_languages.json',
-    'python': 'dataset_programming_languages.json',
-    'javascript': 'dataset_programming_languages.json',
-    'typescript': 'dataset_programming_languages.json',
-    'web development': 'dataset_web_development.json',
-    'html': 'dataset_web_development.json',
-    'css': 'dataset_web_development.json',
-    'react': 'dataset_web_development.json',
-    'frontend': 'dataset_frontend.json',
-    'backend': 'dataset_backend.json',
-    'node.js': 'dataset_backend.json',
-    'express': 'dataset_backend.json',
-    'fullstack': 'dataset_fullstack.json',
-    'databases': 'dataset_databases.json',
-    'sql': 'dataset_databases.json',
-    'nosql': 'dataset_databases.json',
-    'mongodb': 'dataset_databases.json',
-    'testing': 'dataset_testing.json',
-    'unit testing': 'dataset_testing.json',
-    'system design': 'dataset_system_design.json',
-    'architecture': 'dataset_system_design.json',
-    'microservices': 'dataset_system_design.json',
-    'security': 'dataset_security.json',
-    'authentication': 'dataset_security.json',
-    'devops': 'dataset_devops.json',
-    'docker': 'dataset_devops.json',
-    'kubernetes': 'dataset_devops.json',
-    'ci/cd': 'dataset_devops.json'
-  };
-
-  // First, try to match by topics
-  for (const topic of topics) {
-    for (const [topicKey, datasetFile] of Object.entries(topicToDataset)) {
-      if (topic.includes(topicKey) || topicKey.includes(topic)) {
-        return datasetFile;
-      }
-    }
-  }
-
-  // Fallback to role-based matching
-  if (roleLower.includes("java")) return "dataset_java.json";
-  if (roleLower.includes("data") || roleLower.includes("analytics")) return "dataset_data_analytics.json";
-  if (roleLower.includes("fullstack")) return "dataset_fullstack.json";
-  if (roleLower.includes("front")) return "dataset_frontend.json";
-  if (roleLower.includes("back")) return "dataset_backend.json";
-  if (roleLower.includes("dsa") || roleLower.includes("algorithms")) return "dataset_dsa.json";
-  if (roleLower.includes("programming") || roleLower.includes("python") || roleLower.includes("javascript")) return "dataset_programming_languages.json";
-  if (roleLower.includes("web") || roleLower.includes("html") || roleLower.includes("css")) return "dataset_web_development.json";
-  if (roleLower.includes("database") || roleLower.includes("sql")) return "dataset_databases.json";
-  if (roleLower.includes("test")) return "dataset_testing.json";
-  if (roleLower.includes("system") || roleLower.includes("architecture")) return "dataset_system_design.json";
-  if (roleLower.includes("security")) return "dataset_security.json";
-  if (roleLower.includes("devops") || roleLower.includes("docker")) return "dataset_devops.json";
-  
-  // Default fallback
-  return "dataset_fullstack.json";
+  // Only use coding dataset for all coding tests
+  return "dataset_coding.json";
 }
 
 function filterAndSampleQuestions(dataset, topics, count = 5) {
   console.log('Filtering questions with topics:', topics);
   
-  // Filter questions by topics, then randomly sample up to count
-  const topicSet = new Set(topics.map(t => t.trim().toLowerCase()));
-  console.log('Topic set:', Array.from(topicSet));
+  // If only one topic, use simple filtering
+  if (topics.length === 1) {
+    const filteredQuestions = dataset.filter(question => {
+      if (question.topics && Array.isArray(question.topics)) {
+        return question.topics.some(questionTopic => 
+          questionTopic.toLowerCase() === topics[0].toLowerCase()
+        );
+      }
+      return false;
+    });
+    
+    console.log(`Found ${filteredQuestions.length} questions for single topic: ${topics[0]}`);
+    
+    if (filteredQuestions.length < count) {
+      console.log(`Not enough questions for topic. Using random selection from all questions.`);
+      const shuffled = dataset.sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+    
+    const shuffled = filteredQuestions.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
   
-  const filtered = dataset.filter(q => {
-    const questionTopics = q.topics.map(topic => topic.toLowerCase());
-    const hasMatchingTopic = questionTopics.some(topic => 
-      topicSet.has(topic) || Array.from(topicSet).some(userTopic => 
-        topic.includes(userTopic) || userTopic.includes(topic)
-      )
+  // For multiple topics, implement balanced distribution
+  const questionsByTopic = {};
+  const selectedQuestions = [];
+  const usedQuestionIds = new Set();
+  
+  // Group questions by topic and prioritize single-topic questions
+  topics.forEach(topic => {
+    const topicQuestions = dataset.filter(question => {
+      if (question.topics && Array.isArray(question.topics)) {
+        return question.topics.some(questionTopic => 
+          questionTopic.toLowerCase() === topic.toLowerCase()
+        );
+      }
+      return false;
+    });
+    
+    // Separate single-topic questions from multi-topic questions
+    const singleTopicQuestions = topicQuestions.filter(q => 
+      q.topics.length === 1 && q.topics[0].toLowerCase() === topic.toLowerCase()
     );
-    return hasMatchingTopic;
+    const multiTopicQuestions = topicQuestions.filter(q => 
+      q.topics.length > 1 && q.topics.some(t => t.toLowerCase() === topic.toLowerCase())
+    );
+    
+    questionsByTopic[topic] = {
+      single: singleTopicQuestions,
+      multi: multiTopicQuestions,
+      all: topicQuestions
+    };
+    
+    console.log(`Found ${topicQuestions.length} questions for topic: ${topic} (${singleTopicQuestions.length} single-topic, ${multiTopicQuestions.length} multi-topic)`);
   });
   
-  console.log(`Filtered ${filtered.length} questions out of ${dataset.length} total questions`);
+  // Calculate balanced distribution
+  const questionsPerTopic = Math.floor(count / topics.length);
+  const remainingQuestions = count % topics.length;
   
-  // If not enough filtered questions, fallback to random
-  const pool = filtered.length >= count ? filtered : dataset;
-  const shuffled = pool.sort(() => 0.5 - Math.random());
-  const selected = shuffled.slice(0, count);
+  console.log(`Distributing ${questionsPerTopic} questions per topic, with ${remainingQuestions} extra questions`);
   
-  console.log(`Selected ${selected.length} questions for the session`);
-  return selected;
+  // Distribute questions evenly across topics
+  topics.forEach((topic, index) => {
+    const topicData = questionsByTopic[topic];
+    if (topicData.all.length === 0) {
+      console.log(`No questions found for topic: ${topic}`);
+      return;
+    }
+    
+    // Calculate how many questions to take from this topic
+    let questionsToTake = questionsPerTopic;
+    if (index < remainingQuestions) {
+      questionsToTake += 1; // Give extra questions to first few topics
+    }
+    
+    // First try to use single-topic questions
+    const availableSingle = topicData.single.filter(q => !usedQuestionIds.has(q.question));
+    const availableMulti = topicData.multi.filter(q => !usedQuestionIds.has(q.question));
+    
+    let selected = [];
+    
+    // Use single-topic questions first
+    if (availableSingle.length > 0) {
+      const shuffledSingle = availableSingle.sort(() => 0.5 - Math.random());
+      const singleToTake = Math.min(questionsToTake, availableSingle.length);
+      selected.push(...shuffledSingle.slice(0, singleToTake));
+    }
+    
+    // Fill remaining with multi-topic questions if needed
+    const remainingNeeded = questionsToTake - selected.length;
+    if (remainingNeeded > 0 && availableMulti.length > 0) {
+      const shuffledMulti = availableMulti.sort(() => 0.5 - Math.random());
+      selected.push(...shuffledMulti.slice(0, remainingNeeded));
+    }
+    
+    // Mark selected questions as used
+    selected.forEach(q => usedQuestionIds.add(q.question));
+    selectedQuestions.push(...selected);
+    
+    console.log(`Selected ${selected.length} questions for topic: ${topic}`);
+  });
+  
+  // If we don't have enough questions, fill with random questions
+  if (selectedQuestions.length < count) {
+    console.log(`Only found ${selectedQuestions.length} questions. Filling with random questions.`);
+    const availableQuestions = dataset.filter(q => !usedQuestionIds.has(q.question));
+    const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
+    const additionalQuestions = shuffled.slice(0, count - selectedQuestions.length);
+    selectedQuestions.push(...additionalQuestions);
+  }
+  
+  // Shuffle the final selection to mix topics
+  const finalSelection = selectedQuestions.sort(() => 0.5 - Math.random());
+  
+  console.log(`Final selection: ${finalSelection.length} questions with balanced topic distribution`);
+  return finalSelection.slice(0, count);
 }
 
 // @desc    Create a new Actual interview test session
@@ -131,9 +162,11 @@ exports.createActualSession = async (req, res) => {
     const dataset = JSON.parse(fs.readFileSync(datasetPath, "utf-8"));
     console.log(`Loaded ${dataset.length} questions from ${datasetFile}`);
     
-    // Pick questions
-    const topics = topicsToFocus.split(",").map(t => t.trim()).filter(Boolean);
-    console.log('Topics to filter by:', topics);
+    // Use user-provided topics or fall back to default coding topics
+    const userTopics = topicsToFocus ? topicsToFocus.split(",").map(t => t.trim()).filter(Boolean) : [];
+    const defaultTopics = ["programming", "coding", "algorithms", "data structures", "software development"];
+    const topics = userTopics.length > 0 ? userTopics : defaultTopics;
+    console.log('Using topics:', topics);
     
     const selectedQuestions = filterAndSampleQuestions(dataset, topics, 5);
     console.log(`Selected ${selectedQuestions.length} questions`);
@@ -144,7 +177,7 @@ exports.createActualSession = async (req, res) => {
         const question = await Question.create({
           question: q.question,
           answer: q.answer,
-          type: q.type || "technical", // Fix: provide required type
+          type: "coding", // All questions are coding questions
         });
         return question._id;
       })
@@ -154,7 +187,7 @@ exports.createActualSession = async (req, res) => {
       user: userId,
       role,
       experience,
-      topicsToFocus,
+      topicsToFocus: topicsToFocus || defaultTopics.join(", "), // Use user input or default topics
       description,
       questions: questionDocs,
     });
@@ -506,5 +539,34 @@ exports.deleteActualSession = async (req, res) => {
     res.status(200).json({ message: "Session deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+// @desc    Get available topics from the coding dataset
+// @route   GET /api/actual/available-topics
+// @access  Public
+exports.getAvailableTopics = async (req, res) => {
+  try {
+    const availableTopics = extractAvailableTopics();
+    
+    if (availableTopics.length === 0) {
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to load available topics from dataset" 
+      });
+    }
+    
+    res.status(200).json({ 
+      success: true, 
+      topics: availableTopics,
+      count: availableTopics.length
+    });
+  } catch (error) {
+    console.error("Error getting available topics:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server Error",
+      error: error.message 
+    });
   }
 }; 

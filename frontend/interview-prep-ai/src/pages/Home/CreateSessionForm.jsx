@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "../../components/Inputs/Input";
+import TopicSelector from "../../components/Inputs/TopicSelector";
 import SpinnerLoader from "../../components/Loader/SpinnerLoader";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -91,7 +92,7 @@ const CreateSessionForm = () => {
       </h3>
       <p className="text-[14px] text-slate-700 mt-[5px] mb-6">
         Fill out a few quick details and unlock your personalized set of
-        interview questions!
+        coding questions!
       </p>
 
       <form onSubmit={handleCreateSession} className="flex flex-col gap-4">
@@ -111,12 +112,10 @@ const CreateSessionForm = () => {
           type="number"
         />
 
-        <Input
-          value={formData.topicsToFocus}
-          onChange={({ target }) => handleChange("topicsToFocus", target.value)}
+        <TopicSelector
+          selectedTopics={formData.topicsToFocus ? formData.topicsToFocus.split(",").map(t => t.trim()).filter(Boolean) : []}
+          onTopicsChange={(topics) => handleChange("topicsToFocus", topics)}
           label="Topics to Focus On"
-          placeholder="(Comma-separated, e.g., Java, Python, Javascript)"
-          type="text"
         />
 
         <Input

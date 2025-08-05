@@ -17,7 +17,7 @@ const Navbar = () => {
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-orange-500 to-purple-500 transition-all duration-200 group-hover:w-full"></span>
           </Link>
           <Link to="/interview-test" className="text-base font-medium text-gray-700 hover:text-orange-600 transition-colors duration-200 relative group">
-            Interview Test
+            Coding Test
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-orange-500 to-purple-500 transition-all duration-200 group-hover:w-full"></span>
           </Link>
         </div>

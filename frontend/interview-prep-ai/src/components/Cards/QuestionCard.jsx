@@ -65,7 +65,7 @@ const QuestionCard = ({
   return (
     <div className="bg-white p-4 px-6 rounded-lg mb-4 shadow-sm" id={id}>
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-gray-800 mt-2.5">Q{questionNumber}: {question}</h3>
+        <h3 className="text-base font-bold text-gray-800 mt-2.5">Q{questionNumber}: {question}</h3>
         {isSaving && (
           <div className="text-xs text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
@@ -76,14 +76,14 @@ const QuestionCard = ({
       {/* <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div> */}
 
       {isFinalSubmitted ? (
-        <div className="bg-gray-50 p-3 rounded border text-sm text-gray-700">
+        <div className="bg-gray-50 p-3 rounded border text-xs text-gray-700">
           <p><strong>Your submitted answer:</strong></p>
           <p className="mt-1">{userAnswer || "No answer submitted."}</p>
-          {answer && (
+          {/* {answer && (
             <p className="mt-1 text-green-600">
               <strong>Correct answer:</strong> {answer}
             </p>
-          )}
+          )} */}
         </div>
       ) : (
         <>

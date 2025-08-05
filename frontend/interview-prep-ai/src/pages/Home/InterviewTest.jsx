@@ -3,6 +3,7 @@ import { LuPlus } from "react-icons/lu";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import Modal from "../../components/Modal";
 import Input from "../../components/Inputs/Input";
+import TopicSelector from "../../components/Inputs/TopicSelector";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import SpinnerLoader from "../../components/Loader/SpinnerLoader";
@@ -148,7 +149,7 @@ const InterviewTest = () => {
         >
           <div className="w-[90vw] md:w-[35vw] p-7 flex flex-col justify-center">
             <form onSubmit={handleAddSession} className="flex flex-col gap-4">
-              <h3 className="text-2xl font-semibold text-black mb-2">Create a New Session</h3>
+              <h3 className="text-2xl font-semibold text-black mb-2">Create a New Coding Test</h3>
               <Input
                 value={form.role}
                 onChange={({ target }) => handleChange("role", target.value)}
@@ -165,13 +166,10 @@ const InterviewTest = () => {
                 type="number"
                 required
               />
-              <Input
-                value={form.topicsToFocus}
-                onChange={({ target }) => handleChange("topicsToFocus", target.value)}
+              <TopicSelector
+                selectedTopics={form.topicsToFocus ? form.topicsToFocus.split(",").map(t => t.trim()).filter(Boolean) : []}
+                onTopicsChange={(topics) => handleChange("topicsToFocus", topics)}
                 label="Topics to Focus On"
-                placeholder="(Comma-separated, e.g., Java, Python, Javascript)"
-                type="text"
-                required
               />
               <Input
                 value={form.description}

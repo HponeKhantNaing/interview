@@ -215,7 +215,7 @@ const SummaryCard = ({
                 <LuArrowRight size={32} className="text-white" />
               </div>
               <h3 className="text-lg font-bold mb-2">Opening Session</h3>
-              <p className="text-sm opacity-90">Preparing your interview...</p>
+                                <p className="text-sm opacity-90">Preparing your coding test...</p>
             </motion.div>
           </div>
         </motion.div>

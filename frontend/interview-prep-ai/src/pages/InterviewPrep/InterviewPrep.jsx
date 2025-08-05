@@ -377,7 +377,7 @@ const InterviewPrep = () => {
         {/* right container */}
         <div className="container w-3/4 flex-1 flex flex-col pt-4 pb-4 px-6 md:px-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold color-black">Interview Q & A</h2>
+          <h2 className="text-base font-semibold color-black">Interview Q & A</h2>
           {/* Right-side Pagination Controls */}
           {sessionData?.questions && sessionData.questions.length > QUESTIONS_PER_PAGE && (
             <div className="flex items-center gap-1">

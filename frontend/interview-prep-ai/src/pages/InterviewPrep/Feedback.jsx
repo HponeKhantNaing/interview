@@ -164,13 +164,13 @@ const Feedback = () => {
                       <ul className="space-y-2">
                         {feedback.strengths.slice(0, 4).map((item, idx) => (
                           <li key={idx} className="flex items-start">
-                            <span className="text-teal-500 mr-2 mt-0.5 text-xs">•</span>
-                            <span className="text-teal-700 text-sm">{item}</span>
+                            <span className="text-gray-600 mr-2 mt-0.5 text-xs">•</span>
+                            <span className="text-gray-700 text-sm">{item}</span>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-teal-600 italic text-sm">No specific strengths identified.</p>
+                      <p className="text-gray-600 italic text-sm">No specific strengths identified.</p>
                     )}
                   </div>
                 </div>
@@ -192,13 +192,13 @@ const Feedback = () => {
                       <ul className="space-y-2">
                         {feedback.areasForImprovement.slice(0, 4).map((item, idx) => (
                           <li key={idx} className="flex items-start">
-                            <span className="text-rose-500 mr-2 mt-0.5 text-xs">•</span>
-                            <span className="text-rose-700 text-sm">{item}</span>
+                            <span className="text-gray-600 mr-2 mt-0.5 text-xs">•</span>
+                            <span className="text-gray-700 text-sm">{item}</span>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-rose-600 italic text-sm">No specific areas identified.</p>
+                      <p className="text-gray-600 italic text-sm">No specific areas identified.</p>
                     )}
                   </div>
                 </div>
@@ -223,18 +223,18 @@ const Feedback = () => {
                     <div className="space-y-4">
                       {/* Main Summary */}
                       <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                        <p className="text-blue-700 text-sm leading-relaxed">
+                        <p className="text-gray-700 text-sm leading-relaxed">
                           {feedback.summary}
                         </p>
                       </div>
                       
                       {/* Performance Quality Assessment */}
                       <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                        <h4 className="text-xs font-semibold text-blue-800 mb-2 flex items-center">
-                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        <h4 className="text-xs font-semibold text-gray-800 mb-2 flex items-center">
+                          <span className="w-2 h-2 bg-gray-600 rounded-full mr-2"></span>
                           Performance Quality Assessment
                         </h4>
-                        <div className="text-blue-700 text-sm leading-relaxed">
+                        <div className="text-gray-700 text-sm leading-relaxed">
                           {overallPercent >= 80 ? (
                             <p>🎯 <strong>Excellent Performance:</strong> You demonstrated exceptional knowledge and problem-solving skills. Your responses were well-structured, accurate, and showed deep understanding of the concepts.</p>
                           ) : overallPercent >= 60 ? (
@@ -249,14 +249,14 @@ const Feedback = () => {
                       
                       {/* Additional Suggestions */}
                       <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                        <h4 className="text-xs font-semibold text-blue-800 mb-2 flex items-center">
-                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        <h4 className="text-xs font-semibold text-gray-800 mb-2 flex items-center">
+                          <span className="w-2 h-2 bg-gray-600 rounded-full mr-2"></span>
                           Additional Suggestions
                         </h4>
                         <div className="space-y-2">
-                          <div className="text-blue-700 text-sm">
+                          <div className="text-gray-700 text-sm">
                             <p className="mb-2"><strong>📖 Study Recommendations:</strong></p>
-                            <ul className="list-disc list-inside space-y-1 text-xs ml-2">
+                            <ul className="list-disc list-inside space-y-1 text-xs ml-2 text-gray-700">
                               <li>Review the topics where you scored lowest</li>
                               <li>Practice similar problems to build confidence</li>
                               <li>Focus on understanding underlying concepts rather than memorizing</li>
@@ -264,18 +264,18 @@ const Feedback = () => {
                             </ul>
                           </div>
                           
-                          <div className="text-blue-700 text-sm">
+                          <div className="text-gray-700 text-sm">
                             <p className="mb-2"><strong>⏰ Time Management:</strong></p>
-                            <ul className="list-disc list-inside space-y-1 text-xs ml-2">
+                            <ul className="list-disc list-inside space-y-1 text-xs ml-2 text-gray-700">
                               <li>Practice with time constraints to improve speed</li>
                               <li>Learn to quickly identify problem types</li>
                               <li>Develop a systematic approach to problem-solving</li>
                             </ul>
                           </div>
                           
-                          <div className="text-blue-700 text-sm">
+                          <div className="text-gray-700 text-sm">
                             <p className="mb-2"><strong>🎯 Next Steps:</strong></p>
-                            <ul className="list-disc list-inside space-y-1 text-xs ml-2">
+                            <ul className="list-disc list-inside space-y-1 text-xs ml-2 text-gray-700">
                               <li>Take more practice sessions focusing on weak areas</li>
                               <li>Review this feedback after each practice session</li>
                               <li>Track your progress over time</li>
@@ -286,8 +286,8 @@ const Feedback = () => {
                       </div>
                       
                       {/* Encouragement Message */}
-                      <div className="bg-gradient-to-r from-blue-50/50 to-cyan-50/50 backdrop-blur-sm rounded-xl p-3 border border-blue-200/30">
-                        <p className="text-blue-700 text-sm leading-relaxed">
+                      <div className="bg-gradient-to-r from-gray-50/50 to-slate-50/50 backdrop-blur-sm rounded-xl p-3 border border-gray-200/30">
+                        <p className="text-gray-700 text-sm leading-relaxed">
                           💪 <strong>Keep Going!</strong> Every practice session is a step toward improvement. Focus on progress rather than perfection, and remember that consistent practice is the key to success.
                         </p>
                       </div>

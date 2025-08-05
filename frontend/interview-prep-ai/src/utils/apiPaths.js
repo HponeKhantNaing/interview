@@ -43,5 +43,6 @@ export const API_PATHS = {
     SUBMIT: (id) => `/api/actual/${id}/submit`,
     USER_FEEDBACK: (id) => `/api/actual/${id}/user-feedback`,
     DELETE: (id) => `/api/actual/${id}`,
+    GET_AVAILABLE_TOPICS: "/api/actual/available-topics",
   },
 };
