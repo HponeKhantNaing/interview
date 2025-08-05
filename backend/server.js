@@ -33,7 +33,7 @@ const sessionRoutes = require('./routes/sessionRoutes')
 const questionRoutes = require('./routes/questionRoutes');
 const actualRoutes = require('./routes/actualRoutes');
 const { protect } = require("./middlewares/authMiddleware");
-const { generateInterviewQuestions, generateConceptExplanation, generateFeedback, checkAnswerWithAI } = require("./controllers/aiController");
+const { generateInterviewQuestions, generateConceptExplanation, generateFeedbackAPI, checkAnswerWithAI } = require("./controllers/aiController");
 const { checkAndAutoSubmitExpiredSessions } = require("./utils/timerUtils");
 
 const app = express();
@@ -60,7 +60,7 @@ app.use('/api/actual', actualRoutes);
 
 app.post("/api/ai/generate-questions", protect, generateInterviewQuestions);
 app.post("/api/ai/generate-explanation", protect, generateConceptExplanation);
-app.post("/api/ai/generate-feedback", protect, generateFeedback);
+app.post("/api/ai/generate-feedback", protect, generateFeedbackAPI);
 app.post("/api/ai/check-answer", protect, checkAnswerWithAI);
 
 // Serve uploads folder

@@ -39,165 +39,107 @@ const autoSubmitSession = async (sessionId, sessionType = 'session') => {
     session.isFinalSubmitted = true;
     session.submissionTime = submissionTime;
 
-          // Generate feedback
-      try {
-        const questionsForFeedback = session.questions.map(q => ({
-          question: q.question,
-          answer: q.answer,
-          userAnswer: answers[q._id] || ""
-        }));
+          // Generate personalized feedback using AI with detailed performance analysis
+        try {
+          // Prepare detailed performance analysis for AI
+          const performanceAnalysis = {
+            totalQuestions: totalQuestions,
+            answeredQuestions: answeredQuestions,
+            correctAnswers: correctAnswers,
+            percentageScore: percentageScore,
+            submissionTime: submissionTime,
+            role: session.role,
+            experience: session.experience,
+            topicsToFocus: session.topicsToFocus,
+            questions: session.questions.map(q => ({
+              question: q.question,
+              userAnswer: q.userAnswer || answers[q._id] || "",
+              correctAnswer: q.answer,
+              type: q.type,
+              isAnswered: (q.userAnswer || answers[q._id] || "").trim().length > 0,
+              answerLength: (q.userAnswer || answers[q._id] || "").length,
+              hasCode: (q.userAnswer || answers[q._id] || "").includes('```'),
+              timeSpent: q.timeSpent || 0
+            })),
+            performanceMetrics: {
+              answerRate: (answeredQuestions / totalQuestions) * 100,
+              accuracyRate: percentageScore,
+              averageAnswerLength: session.questions.reduce((sum, q) => sum + ((q.userAnswer || answers[q._id] || "").length), 0) / answeredQuestions || 0,
+              codeQuestionsAnswered: session.questions.filter(q => q.type === 'coding' && (q.userAnswer || answers[q._id] || "").trim().length > 0).length,
+              technicalQuestionsAnswered: session.questions.filter(q => q.type === 'technical' && (q.userAnswer || answers[q._id] || "").trim().length > 0).length,
+              questionsWithCode: session.questions.filter(q => (q.userAnswer || answers[q._id] || "").includes('```')).length,
+              timeEfficiency: submissionTime ? (answeredQuestions / submissionTime) * 60 : 0
+            },
+            strengths: [],
+            weaknesses: [],
+            improvementAreas: []
+          };
 
-        const feedbackRes = await new Promise((resolve, reject) => {
-          generateFeedback({
-            body: {
-              role: session.role,
-              experience: session.experience,
-              topicsToFocus: session.topicsToFocus,
-              questions: questionsForFeedback,
-              submissionTime: submissionTime
-            }
-          }, {
-            status: (code) => ({
-              json: (data) => code === 200 ? resolve(data) : reject(data)
-            })
-          });
-        });
-        
-        // Calculate scoring based on correct answers for auto-submission
-        let correctAnswers = 0;
-        let totalQuestions = session.questions.length;
-        let answeredQuestions = 0;
-        
-        await Promise.all(session.questions.map(async (q) => {
-          // Get the user answer from the database (updated question) or from request body
-          const userAnswer = q.userAnswer || answers[q._id] || "";
-          if (!userAnswer || userAnswer.trim() === "") return; // Skip empty answers
+          // Analyze patterns for strengths and weaknesses
+          const codingQuestions = session.questions.filter(q => q.type === 'coding');
+          const technicalQuestions = session.questions.filter(q => q.type === 'technical');
           
-          answeredQuestions++;
-          console.log(`Checking timer answer for question ${q._id}:`, {
-            question: q.question.substring(0, 50) + '...',
-            userAnswer: userAnswer.substring(0, 50) + '...',
-            correctAnswer: q.answer.substring(0, 50) + '...'
-          });
+          const answeredCoding = codingQuestions.filter(q => (q.userAnswer || answers[q._id] || "").trim().length > 0);
+          const answeredTechnical = technicalQuestions.filter(q => (q.userAnswer || answers[q._id] || "").trim().length > 0);
           
-          try {
-            const aiRes = await axios.post(
-              `${API_BASE}/api/ai/check-answer`,
-              {
-                question: q.question,
-                userAnswer,
-                correctAnswer: q.answer
-              },
-              {
-                headers: { Authorization: `Bearer ${process.env.JWT_SECRET}` }
-              }
-            );
-            
-            console.log(`AI response for timer question ${q._id}:`, aiRes.data);
-            
-            if (aiRes.data && aiRes.data.isCorrect) {
-              correctAnswers++;
-              console.log(`✅ Timer question ${q._id} marked as correct`);
-            } else {
-              console.log(`❌ Timer question ${q._id} marked as incorrect`);
-            }
-          } catch (err) {
-            console.error(`AI check failed for timer question ${q._id}:`, err.message);
-            // If AI fails, use a more flexible assessment as fallback
-            const userAnswerLower = userAnswer.toLowerCase().trim();
-            
-            // Extract key technical terms and concepts that indicate understanding
-            const technicalTerms = ['javascript', 'java', 'python', 'react', 'node', 'express', 'mongodb', 'sql', 'api', 'http', 'json', 'html', 'css', 'git', 'docker', 'kubernetes', 'aws', 'azure', 'database', 'server', 'client', 'frontend', 'backend', 'fullstack', 'microservices', 'rest', 'graphql', 'authentication', 'authorization', 'encryption', 'security', 'testing', 'deployment', 'ci/cd', 'agile', 'scrum', 'oop', 'functional', 'async', 'promise', 'callback', 'closure', 'hoisting', 'prototype', 'inheritance', 'polymorphism', 'encapsulation', 'abstraction', 'interface', 'abstract', 'static', 'final', 'volatile', 'synchronized', 'thread', 'process', 'memory', 'garbage', 'collection', 'algorithm', 'data structure', 'array', 'linked list', 'stack', 'queue', 'tree', 'graph', 'hash', 'map', 'set', 'sort', 'search', 'binary', 'linear', 'recursion', 'iteration', 'complexity', 'big o', 'time', 'space'];
-            
-            const userWords = userAnswerLower.split(/\s+/);
-            
-            // Check for technical term presence (indicates understanding)
-            const userTechnicalTerms = userWords.filter(word => 
-              technicalTerms.includes(word.toLowerCase())
-            );
-            
-            // Check for meaningful answer length and content
-            const meaningfulWords = userWords.filter(word => word.length > 3);
-            const hasSubstantialContent = meaningfulWords.length >= 3;
-            const hasTechnicalKnowledge = userTechnicalTerms.length >= 1;
-            
-            // More lenient assessment - if user shows technical knowledge or substantial content
-            if (hasTechnicalKnowledge || hasSubstantialContent) {
-              correctAnswers++;
-              console.log(`✅ Timer question ${q._id} marked as correct (fallback: technical terms: ${userTechnicalTerms.length}, content words: ${meaningfulWords.length})`);
-            } else {
-              console.log(`❌ Timer question ${q._id} marked as incorrect (fallback: insufficient content or technical terms)`);
-            }
+          if (answeredCoding.length > 0) {
+            performanceAnalysis.strengths.push('Demonstrated coding skills');
           }
-        }));
-        
-        // Calculate percentage score
-        const percentageScore = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-        
-        // Calculate skill scores based on performance
-        const calculateSkillScores = (percentageScore, answeredCount, totalQuestions) => {
-          // Calculate score based on percentage of total questions
-          let score;
-          if (percentageScore === 0) {
-            score = 0;
-          } else {
-            // Convert percentage to score out of total questions
-            score = Math.round((percentageScore / 100) * totalQuestions);
-            // Ensure score doesn't exceed total questions
-            score = Math.min(score, totalQuestions);
+          if (answeredTechnical.length > 0) {
+            performanceAnalysis.strengths.push('Showed theoretical knowledge');
+          }
+          if (performanceAnalysis.performanceMetrics.averageAnswerLength > 100) {
+            performanceAnalysis.strengths.push('Provided detailed explanations');
+          }
+          if (performanceAnalysis.performanceMetrics.questionsWithCode > 0) {
+            performanceAnalysis.strengths.push('Used code examples in responses');
           }
           
-          return [
-            { skill: "Technical Knowledge", score: score, total: totalQuestions },
-            { skill: "Problem Solving", score: score, total: totalQuestions },
-            { skill: "Communication", score: score, total: totalQuestions },
-            { skill: "Code Quality", score: score, total: totalQuestions },
-            { skill: "System Design", score: score, total: totalQuestions }
-          ];
-        };
-        
-        // Generate strengths and areas for improvement based on performance
-        const generateStrengths = (percentageScore, answeredCount, totalQuestions) => {
-          if (percentageScore === 0) return [];
-          if (percentageScore >= 80) return ["Excellent understanding of concepts", "Strong problem-solving skills", "Good communication of ideas"];
-          if (percentageScore >= 60) return ["Good grasp of fundamentals", "Shows potential for growth", "Demonstrates learning ability"];
-          if (percentageScore >= 40) return ["Made effort to answer questions", "Shows initiative", "Has basic understanding"];
-          return ["Attempted to answer questions", "Shows willingness to learn"];
-        };
-        
-        const generateAreasForImprovement = (percentageScore, answeredCount, totalQuestions) => {
-          if (percentageScore === 0) return ["No answers were provided", "Complete all questions to get meaningful feedback"];
-          if (percentageScore >= 80) return ["Continue practicing advanced concepts", "Focus on edge cases", "Work on time management"];
-          if (percentageScore >= 60) return ["Review fundamental concepts", "Practice more coding problems", "Improve explanation clarity"];
-          if (percentageScore >= 40) return ["Study core concepts more thoroughly", "Practice more questions", "Focus on accuracy"];
-          return ["Study the basics more thoroughly", "Practice answering all questions", "Focus on understanding concepts"];
-        };
-        
-        const generateSummary = (percentageScore, answeredCount, totalQuestions, correctAnswers) => {
-          if (answeredCount === 0) {
-            return "No answers were provided for this session. Please complete all questions to receive proper feedback.";
+          if (answeredCoding.length === 0 && codingQuestions.length > 0) {
+            performanceAnalysis.weaknesses.push('Avoided coding questions');
+          }
+          if (answeredTechnical.length === 0 && technicalQuestions.length > 0) {
+            performanceAnalysis.weaknesses.push('Struggled with theoretical questions');
+          }
+          if (performanceAnalysis.performanceMetrics.answerRate < 50) {
+            performanceAnalysis.weaknesses.push('Low completion rate');
+          }
+          if (performanceAnalysis.performanceMetrics.averageAnswerLength < 50) {
+            performanceAnalysis.weaknesses.push('Brief responses');
+          }
+
+          // Generate personalized feedback using AI
+          const feedbackData = {
+            role: session.role,
+            experience: session.experience,
+            topicsToFocus: session.topicsToFocus,
+            performanceAnalysis: performanceAnalysis,
+            questions: session.questions.map(q => ({
+              question: q.question,
+              userAnswer: q.userAnswer || answers[q._id] || "",
+              correctAnswer: q.answer,
+              type: q.type,
+              isAnswered: (q.userAnswer || answers[q._id] || "").trim().length > 0,
+              answerLength: (q.userAnswer || answers[q._id] || "").length,
+              hasCode: (q.userAnswer || answers[q._id] || "").includes('```'),
+              timeSpent: q.timeSpent || 0
+            }))
+          };
+
+          let feedback = await generateFeedback(feedbackData);
+          
+          // Clean and parse the AI response
+          let rawText = feedback;
+          if (typeof rawText === 'string') {
+            const cleanedText = rawText
+              .replace(/^```json\s*/, "")
+              .replace(/```$/, "")
+              .trim();
+            feedback = JSON.parse(cleanedText);
           }
           
-          const scoreDescription = percentageScore >= 90 ? "excellent" : 
-                                 percentageScore >= 80 ? "very good" : 
-                                 percentageScore >= 70 ? "good" : 
-                                 percentageScore >= 60 ? "fair" : 
-                                 percentageScore >= 40 ? "needs improvement" : "poor";
-          
-          return `You answered ${answeredCount} out of ${totalQuestions} questions with ${correctAnswers} correct answers (${percentageScore}% accuracy). Your performance is ${scoreDescription}. ${answeredCount < totalQuestions ? "Consider answering all questions for a complete assessment." : ""}`;
-        };
-        
-        // Update feedback with calculated scores
-        let feedback = feedbackRes;
-        if (feedback) {
-          feedback.skillsBreakdown = calculateSkillScores(percentageScore, answeredQuestions, totalQuestions);
-          feedback.strengths = generateStrengths(percentageScore, answeredQuestions, totalQuestions);
-          feedback.areasForImprovement = generateAreasForImprovement(percentageScore, answeredQuestions, totalQuestions);
-          feedback.summary = generateSummary(percentageScore, answeredQuestions, totalQuestions, correctAnswers);
-        }
-        
-        session.feedback = feedback;
-      } catch (err) {
+          session.feedback = feedback;
+        } catch (err) {
         console.error("Auto-submission feedback generation failed:", err);
         // Create fallback feedback for auto-submission with proper scoring
         // Calculate score based on percentage of total questions

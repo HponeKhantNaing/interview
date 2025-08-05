@@ -153,14 +153,85 @@ const generateConceptExplanation = async (req, res) => {
 // @desc    Generate feedback for a session's answers
 // @route   POST /api/ai/generate-feedback
 // @access  Private
-const generateFeedback = async (req, res) => {
+const generateFeedback = async (feedbackData) => {
   try {
-    const { role, experience, topicsToFocus, questions, submissionTime } = req.body;
-    if (!role || !experience || !topicsToFocus || !questions || !Array.isArray(questions)) {
-      return res.status(400).json({ message: "Missing required fields" });
+    const { role, experience, topicsToFocus, performanceAnalysis, questions } = feedbackData;
+    
+    if (!role || !experience || !topicsToFocus || !performanceAnalysis || !questions || !Array.isArray(questions)) {
+      throw new Error("Missing required fields for feedback generation");
     }
 
-    const prompt = feedbackPrompt(role, experience, topicsToFocus, questions, submissionTime);
+    // Create a comprehensive prompt for personalized feedback
+    const prompt = `
+You are an expert AI interview coach analyzing a candidate's performance. Generate personalized, detailed feedback based on the following comprehensive data:
+
+CANDIDATE PROFILE:
+- Role: ${role}
+- Experience: ${experience} years
+- Focus Topics: ${topicsToFocus}
+
+PERFORMANCE METRICS:
+- Total Questions: ${performanceAnalysis.totalQuestions}
+- Questions Answered: ${performanceAnalysis.answeredQuestions}
+- Correct Answers: ${performanceAnalysis.correctAnswers}
+- Accuracy Rate: ${performanceAnalysis.percentageScore}%
+- Answer Rate: ${performanceAnalysis.performanceMetrics.answerRate.toFixed(1)}%
+- Average Answer Length: ${performanceAnalysis.performanceMetrics.averageAnswerLength.toFixed(0)} characters
+- Coding Questions Answered: ${performanceAnalysis.performanceMetrics.codeQuestionsAnswered}/${performanceAnalysis.totalQuestions}
+- Technical Questions Answered: ${performanceAnalysis.performanceMetrics.technicalQuestionsAnswered}/${performanceAnalysis.totalQuestions}
+- Questions with Code Examples: ${performanceAnalysis.performanceMetrics.questionsWithCode}
+- Time Efficiency: ${performanceAnalysis.performanceMetrics.timeEfficiency.toFixed(1)} questions per minute
+${performanceAnalysis.submissionTime ? `- Total Time: ${Math.floor(performanceAnalysis.submissionTime / 60)} minutes ${performanceAnalysis.submissionTime % 60} seconds` : ''}
+
+IDENTIFIED STRENGTHS:
+${performanceAnalysis.strengths.length > 0 ? performanceAnalysis.strengths.map(s => `- ${s}`).join('\n') : '- None identified'}
+
+IDENTIFIED WEAKNESSES:
+${performanceAnalysis.weaknesses.length > 0 ? performanceAnalysis.weaknesses.map(w => `- ${w}`).join('\n') : '- None identified'}
+
+DETAILED QUESTION ANALYSIS:
+${questions.map((q, index) => `
+Question ${index + 1} (${q.type}):
+- Question: ${q.question.substring(0, 150)}${q.question.length > 150 ? '...' : ''}
+- User Answer: ${q.userAnswer ? q.userAnswer.substring(0, 200) + (q.userAnswer.length > 200 ? '...' : '') : 'No answer provided'}
+- Answer Length: ${q.answerLength} characters
+- Has Code: ${q.hasCode ? 'Yes' : 'No'}
+- Time Spent: ${q.timeSpent || 0} seconds
+`).join('')}
+
+TASK: Generate personalized feedback that:
+1. Acknowledges the candidate's unique performance patterns
+2. Provides specific, actionable feedback based on their actual responses
+3. Considers their role and experience level
+4. Offers concrete improvement suggestions
+5. Maintains an encouraging tone while being honest about areas for growth
+6. References specific examples from their answers when possible
+7. Provides a comprehensive summary that reflects their actual performance
+
+Return the result as a valid JSON object in this exact format:
+{
+  "skillsBreakdown": [
+    { "skill": "Technical Knowledge", "score": 0, "total": ${performanceAnalysis.totalQuestions} },
+    { "skill": "Problem Solving", "score": 0, "total": ${performanceAnalysis.totalQuestions} },
+    { "skill": "Communication", "score": 0, "total": ${performanceAnalysis.totalQuestions} },
+    { "skill": "Code Quality", "score": 0, "total": ${performanceAnalysis.totalQuestions} },
+    { "skill": "System Design", "score": 0, "total": ${performanceAnalysis.totalQuestions} }
+  ],
+  "strengths": [],
+  "areasForImprovement": [],
+  "summary": ""
+}
+
+SCORING GUIDELINES:
+- Score 0-5 for each skill based on actual performance
+- Consider answer quality, completeness, and relevance
+- Factor in the candidate's experience level
+- Be realistic but encouraging
+- If no answers provided, score 0 for all skills
+
+IMPORTANT: Make the feedback highly personalized and specific to this candidate's performance. Avoid generic responses. Reference specific details from their answers and performance metrics.
+`;
+
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-lite",
       contents: prompt,
@@ -172,12 +243,10 @@ const generateFeedback = async (req, res) => {
       .replace(/```$/, "")
       .trim();
     const data = JSON.parse(cleanedText);
-    res.status(200).json(data);
+    return data;
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to generate feedback",
-      error: error.message,
-    });
+    console.error("Failed to generate personalized feedback:", error);
+    throw new Error("Failed to generate personalized feedback");
   }
 };
 
@@ -251,4 +320,70 @@ const checkAnswerWithAI = async (req, res) => {
   }
 };
 
-module.exports = { generateInterviewQuestions, generateConceptExplanation, generateFeedback, checkAnswerWithAI };
+// Wrapper function for API endpoint compatibility
+const generateFeedbackAPI = async (req, res) => {
+  try {
+    const { role, experience, topicsToFocus, questions, submissionTime } = req.body;
+    if (!role || !experience || !topicsToFocus || !questions || !Array.isArray(questions)) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Create basic performance analysis for API calls
+    const performanceAnalysis = {
+      totalQuestions: questions.length,
+      answeredQuestions: questions.filter(q => q.userAnswer && q.userAnswer.trim().length > 0).length,
+      correctAnswers: 0, // Will be calculated by the calling function
+      percentageScore: 0, // Will be calculated by the calling function
+      submissionTime: submissionTime,
+      role: role,
+      experience: experience,
+      topicsToFocus: topicsToFocus,
+      questions: questions.map(q => ({
+        question: q.question,
+        userAnswer: q.userAnswer,
+        correctAnswer: q.answer,
+        type: q.type,
+        isAnswered: q.userAnswer && q.userAnswer.trim().length > 0,
+        answerLength: q.userAnswer ? q.userAnswer.length : 0,
+        hasCode: q.userAnswer && q.userAnswer.includes('```'),
+        timeSpent: q.timeSpent || 0
+      })),
+      performanceMetrics: {
+        answerRate: 0,
+        accuracyRate: 0,
+        averageAnswerLength: 0,
+        codeQuestionsAnswered: 0,
+        technicalQuestionsAnswered: 0,
+        questionsWithCode: 0,
+        timeEfficiency: 0
+      },
+      strengths: [],
+      weaknesses: [],
+      improvementAreas: []
+    };
+
+    const feedbackData = {
+      role,
+      experience,
+      topicsToFocus,
+      performanceAnalysis,
+      questions
+    };
+
+    const data = await generateFeedback(feedbackData);
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to generate feedback",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { 
+  generateInterviewQuestions, 
+  generateConceptExplanation, 
+  generateFeedback, 
+  generateFeedbackAPI,
+  checkAnswerWithAI 
+};

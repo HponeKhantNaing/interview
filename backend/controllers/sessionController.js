@@ -263,43 +263,96 @@ exports.finalSubmitSession = async (req, res) => {
       userAnswer: q.userAnswer || answers[q._id] || ""
     }));
 
-    // Generate feedback using AI
-    const feedbackPrompt = require('../utils/prompts').feedbackPrompt;
-    const prompt = feedbackPrompt(session.role, session.experience, session.topicsToFocus, questionsForFeedback, submissionTime);
-    
-    // Debug log to see what data is being sent
-    console.log('=== DEBUG: Questions for feedback ===');
-    console.log('Total questions:', session.questions.length);
-    console.log('Answered questions:', answeredQuestions);
-    console.log('Correct answers:', correctAnswers);
-    console.log('Percentage score:', percentageScore);
-    questionsForFeedback.forEach((q, index) => {
-      console.log(`Question ${index + 1}:`, {
-        question: q.question.substring(0, 50) + '...',
-        userAnswer: q.userAnswer ? q.userAnswer.substring(0, 50) + '...' : 'EMPTY',
-        hasAnswer: q.userAnswer && q.userAnswer.trim() !== '',
-        answerLength: q.userAnswer ? q.userAnswer.length : 0,
-        questionId: session.questions[index]._id
-      });
-    });
-    console.log('=== END DEBUG ===');
-    
-    // Call AI directly
-    let feedbackResponse = null;
+    // Generate AI feedback with detailed context
+    let feedbackResponse;
     try {
-      const { GoogleGenAI } = require("@google/genai");
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
-        contents: prompt,
-      });
+      // Prepare detailed performance analysis for AI
+      const performanceAnalysis = {
+        totalQuestions: totalQuestions,
+        answeredQuestions: answeredQuestions,
+        correctAnswers: correctAnswers,
+        percentageScore: percentageScore,
+        submissionTime: session.submissionTime,
+        role: session.role,
+        experience: session.experience,
+        topicsToFocus: session.topicsToFocus,
+        questions: questions.map(q => ({
+          question: q.question,
+          userAnswer: q.userAnswer,
+          correctAnswer: q.answer,
+          type: q.type,
+          isAnswered: q.userAnswer && q.userAnswer.trim().length > 0,
+          answerLength: q.userAnswer ? q.userAnswer.length : 0,
+          hasCode: q.userAnswer && q.userAnswer.includes('```'),
+          timeSpent: q.timeSpent || 0
+        })),
+        performanceMetrics: {
+          answerRate: (answeredQuestions / totalQuestions) * 100,
+          accuracyRate: percentageScore,
+          averageAnswerLength: questions.reduce((sum, q) => sum + (q.userAnswer ? q.userAnswer.length : 0), 0) / answeredQuestions || 0,
+          codeQuestionsAnswered: questions.filter(q => q.type === 'coding' && q.userAnswer && q.userAnswer.trim().length > 0).length,
+          technicalQuestionsAnswered: questions.filter(q => q.type === 'technical' && q.userAnswer && q.userAnswer.trim().length > 0).length,
+          questionsWithCode: questions.filter(q => q.userAnswer && q.userAnswer.includes('```')).length,
+          timeEfficiency: session.submissionTime ? (answeredQuestions / session.submissionTime) * 60 : 0 // questions per minute
+        },
+        strengths: [],
+        weaknesses: [],
+        improvementAreas: []
+      };
+
+      // Analyze patterns for strengths and weaknesses
+      const codingQuestions = questions.filter(q => q.type === 'coding');
+      const technicalQuestions = questions.filter(q => q.type === 'technical');
       
-      let rawText = response.text;
-      const cleanedText = rawText
-        .replace(/^```json\s*/, "")
-        .replace(/```$/, "")
-        .trim();
-      feedbackResponse = JSON.parse(cleanedText);
+      const answeredCoding = codingQuestions.filter(q => q.userAnswer && q.userAnswer.trim().length > 0);
+      const answeredTechnical = technicalQuestions.filter(q => q.userAnswer && q.userAnswer.trim().length > 0);
+      
+      if (answeredCoding.length > 0) {
+        performanceAnalysis.strengths.push('Demonstrated coding skills');
+      }
+      if (answeredTechnical.length > 0) {
+        performanceAnalysis.strengths.push('Showed theoretical knowledge');
+      }
+      if (performanceAnalysis.performanceMetrics.averageAnswerLength > 100) {
+        performanceAnalysis.strengths.push('Provided detailed explanations');
+      }
+      if (performanceAnalysis.performanceMetrics.questionsWithCode > 0) {
+        performanceAnalysis.strengths.push('Used code examples in responses');
+      }
+      
+      if (answeredCoding.length === 0 && codingQuestions.length > 0) {
+        performanceAnalysis.weaknesses.push('Avoided coding questions');
+      }
+      if (answeredTechnical.length === 0 && technicalQuestions.length > 0) {
+        performanceAnalysis.weaknesses.push('Struggled with theoretical questions');
+      }
+      if (performanceAnalysis.performanceMetrics.answerRate < 50) {
+        performanceAnalysis.weaknesses.push('Low completion rate');
+      }
+      if (performanceAnalysis.performanceMetrics.averageAnswerLength < 50) {
+        performanceAnalysis.weaknesses.push('Brief responses');
+      }
+
+      // Generate personalized feedback using AI
+      const feedbackData = {
+        role: session.role,
+        experience: session.experience,
+        topicsToFocus: session.topicsToFocus,
+        performanceAnalysis: performanceAnalysis,
+        questions: questions
+      };
+
+      feedbackResponse = await generateFeedback(feedbackData);
+      
+      // Clean and parse the AI response
+      let rawText = feedbackResponse;
+      if (typeof rawText === 'string') {
+        const cleanedText = rawText
+          .replace(/^```json\s*/, "")
+          .replace(/```$/, "")
+          .trim();
+        feedbackResponse = JSON.parse(cleanedText);
+      }
     } catch (aiError) {
       console.error("AI feedback generation failed:", aiError);
       // Create fallback feedback

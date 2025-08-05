@@ -347,157 +347,125 @@ exports.finalSubmitActualSession = async (req, res) => {
     session.isFinalSubmitted = true;
     session.submissionTime = submissionTime;
     await session.save();
-    // Generate feedback (reuse AI feedback logic, but pass questions)
-    let feedback = null;
+    // Generate AI feedback with detailed context
+    let feedbackResponse;
     try {
-      const questionsForFeedback = session.questions.map(q => ({
-        question: q.question,
-        answer: q.answer,
-        userAnswer: q.userAnswer || answers[q._id] || ""
-      }));
-      // Generate feedback using AI
-      const feedbackPrompt = require('../utils/prompts').feedbackPrompt;
-      const prompt = feedbackPrompt(session.role, session.experience, session.topicsToFocus, questionsForFeedback, submissionTime);
-      
-      // Debug log to see what data is being sent
-      console.log('=== DEBUG: Questions for feedback (Actual) ===');
-      questionsForFeedback.forEach((q, index) => {
-        console.log(`Question ${index + 1}:`, {
+      // Prepare detailed performance analysis for AI
+      const performanceAnalysis = {
+        totalQuestions: totalQuestions,
+        answeredQuestions: answeredQuestions,
+        correctAnswers: correctAnswers,
+        percentageScore: percentageScore,
+        submissionTime: submissionTime,
+        role: session.role,
+        experience: session.experience,
+        topicsToFocus: session.topicsToFocus,
+        questions: session.questions.map(q => ({
           question: q.question,
-          userAnswer: q.userAnswer,
-          hasAnswer: q.userAnswer && q.userAnswer.trim() !== '',
-          answerLength: q.userAnswer ? q.userAnswer.length : 0
-        });
-      });
-      console.log('=== END DEBUG ===');
+          userAnswer: q.userAnswer || answers[q._id] || "",
+          correctAnswer: q.answer,
+          type: q.type,
+          isAnswered: (q.userAnswer || answers[q._id] || "").trim().length > 0,
+          answerLength: (q.userAnswer || answers[q._id] || "").length,
+          hasCode: (q.userAnswer || answers[q._id] || "").includes('```'),
+          timeSpent: q.timeSpent || 0
+        })),
+        performanceMetrics: {
+          answerRate: (answeredQuestions / totalQuestions) * 100,
+          accuracyRate: percentageScore,
+          averageAnswerLength: session.questions.reduce((sum, q) => sum + ((q.userAnswer || answers[q._id] || "").length), 0) / answeredQuestions || 0,
+          codeQuestionsAnswered: session.questions.filter(q => q.type === 'coding' && (q.userAnswer || answers[q._id] || "").trim().length > 0).length,
+          technicalQuestionsAnswered: session.questions.filter(q => q.type === 'technical' && (q.userAnswer || answers[q._id] || "").trim().length > 0).length,
+          questionsWithCode: session.questions.filter(q => (q.userAnswer || answers[q._id] || "").includes('```')).length,
+          timeEfficiency: submissionTime ? (answeredQuestions / submissionTime) * 60 : 0
+        },
+        strengths: [],
+        weaknesses: [],
+        improvementAreas: []
+      };
+
+      // Analyze patterns for strengths and weaknesses
+      const codingQuestions = session.questions.filter(q => q.type === 'coding');
+      const technicalQuestions = session.questions.filter(q => q.type === 'technical');
       
-      // Call AI directly
-      let feedbackResponse = null;
-      try {
-        const { GoogleGenAI } = require("@google/genai");
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const response = await ai.models.generateContent({
-          model: "gemini-2.0-flash-lite",
-          contents: prompt,
-        });
-        
-        let rawText = response.text;
+      const answeredCoding = codingQuestions.filter(q => (q.userAnswer || answers[q._id] || "").trim().length > 0);
+      const answeredTechnical = technicalQuestions.filter(q => (q.userAnswer || answers[q._id] || "").trim().length > 0);
+      
+      if (answeredCoding.length > 0) {
+        performanceAnalysis.strengths.push('Demonstrated coding skills');
+      }
+      if (answeredTechnical.length > 0) {
+        performanceAnalysis.strengths.push('Showed theoretical knowledge');
+      }
+      if (performanceAnalysis.performanceMetrics.averageAnswerLength > 100) {
+        performanceAnalysis.strengths.push('Provided detailed explanations');
+      }
+      if (performanceAnalysis.performanceMetrics.questionsWithCode > 0) {
+        performanceAnalysis.strengths.push('Used code examples in responses');
+      }
+      
+      if (answeredCoding.length === 0 && codingQuestions.length > 0) {
+        performanceAnalysis.weaknesses.push('Avoided coding questions');
+      }
+      if (answeredTechnical.length === 0 && technicalQuestions.length > 0) {
+        performanceAnalysis.weaknesses.push('Struggled with theoretical questions');
+      }
+      if (performanceAnalysis.performanceMetrics.answerRate < 50) {
+        performanceAnalysis.weaknesses.push('Low completion rate');
+      }
+      if (performanceAnalysis.performanceMetrics.averageAnswerLength < 50) {
+        performanceAnalysis.weaknesses.push('Brief responses');
+      }
+
+      // Generate personalized feedback using AI
+      const feedbackData = {
+        role: session.role,
+        experience: session.experience,
+        topicsToFocus: session.topicsToFocus,
+        performanceAnalysis: performanceAnalysis,
+        questions: session.questions.map(q => ({
+          question: q.question,
+          userAnswer: q.userAnswer || answers[q._id] || "",
+          correctAnswer: q.answer,
+          type: q.type,
+          isAnswered: (q.userAnswer || answers[q._id] || "").trim().length > 0,
+          answerLength: (q.userAnswer || answers[q._id] || "").length,
+          hasCode: (q.userAnswer || answers[q._id] || "").includes('```'),
+          timeSpent: q.timeSpent || 0
+        }))
+      };
+
+      feedbackResponse = await generateFeedback(feedbackData);
+      
+      // Clean and parse the AI response
+      let rawText = feedbackResponse;
+      if (typeof rawText === 'string') {
         const cleanedText = rawText
           .replace(/^```json\s*/, "")
           .replace(/```$/, "")
           .trim();
         feedbackResponse = JSON.parse(cleanedText);
-      } catch (aiError) {
-        console.error("AI feedback generation failed:", aiError);
-        // Create fallback feedback
-        feedbackResponse = {
-          skillsBreakdown: [
-            { skill: "Technical Knowledge", score: 0 },
-            { skill: "Problem Solving", score: 0 },
-            { skill: "Communication", score: 0 },
-            { skill: "Code Quality", score: 0 },
-            { skill: "System Design", score: 0 }
-          ],
-          strengths: ["Session completed successfully"],
-          areasForImprovement: ["AI feedback generation failed", "Please try again later"],
-          summary: "Session completed. AI feedback generation encountered an error."
-        };
       }
-      
-      // Calculate skill scores based on performance
-      const calculateSkillScores = (percentageScore, answeredCount, totalQuestions) => {
-        // Calculate score based on percentage of total questions
-        let score;
-        if (percentageScore === 0) {
-          score = 0;
-        } else {
-          // Convert percentage to score out of total questions
-          score = Math.round((percentageScore / 100) * totalQuestions);
-          // Ensure score doesn't exceed total questions
-          score = Math.min(score, totalQuestions);
-        }
-        
-        return [
-          { skill: "Technical Knowledge", score: score, total: totalQuestions },
-          { skill: "Problem Solving", score: score, total: totalQuestions },
-          { skill: "Communication", score: score, total: totalQuestions },
-          { skill: "Code Quality", score: score, total: totalQuestions },
-          { skill: "System Design", score: score, total: totalQuestions }
-        ];
-      };
-      
-      // Generate strengths and areas for improvement based on performance
-      const generateStrengths = (percentageScore, answeredCount, totalQuestions) => {
-        if (percentageScore === 0) return [];
-        if (percentageScore >= 80) return ["Excellent understanding of concepts", "Strong problem-solving skills", "Good communication of ideas"];
-        if (percentageScore >= 60) return ["Good grasp of fundamentals", "Shows potential for growth", "Demonstrates learning ability"];
-        if (percentageScore >= 40) return ["Made effort to answer questions", "Shows initiative", "Has basic understanding"];
-        return ["Attempted to answer questions", "Shows willingness to learn"];
-      };
-      
-      const generateAreasForImprovement = (percentageScore, answeredCount, totalQuestions) => {
-        if (percentageScore === 0) return ["No answers were provided", "Complete all questions to get meaningful feedback"];
-        if (percentageScore >= 80) return ["Continue practicing advanced concepts", "Focus on edge cases", "Work on time management"];
-        if (percentageScore >= 60) return ["Review fundamental concepts", "Practice more coding problems", "Improve explanation clarity"];
-        if (percentageScore >= 40) return ["Study core concepts more thoroughly", "Practice more questions", "Focus on accuracy"];
-        return ["Study the basics more thoroughly", "Practice answering all questions", "Focus on understanding concepts"];
-      };
-      
-      const generateSummary = (percentageScore, answeredCount, totalQuestions, correctAnswers) => {
-        if (answeredCount === 0) {
-          return "No answers were provided for this session. Please complete all questions to receive proper feedback.";
-        }
-        
-        const scoreDescription = percentageScore >= 90 ? "excellent" : 
-                               percentageScore >= 80 ? "very good" : 
-                               percentageScore >= 70 ? "good" : 
-                               percentageScore >= 60 ? "fair" : 
-                               percentageScore >= 40 ? "needs improvement" : "poor";
-        
-        return `You answered ${answeredCount} out of ${totalQuestions} questions with ${correctAnswers} correct answers (${percentageScore}% accuracy). Your performance is ${scoreDescription}. ${answeredCount < totalQuestions ? "Consider answering all questions for a complete assessment." : ""}`;
-      };
-      
-      // Update feedback with calculated scores
-      if (feedbackResponse) {
-        feedbackResponse.skillsBreakdown = calculateSkillScores(percentageScore, answeredQuestions, totalQuestions);
-        feedbackResponse.strengths = generateStrengths(percentageScore, answeredQuestions, totalQuestions);
-        feedbackResponse.areasForImprovement = generateAreasForImprovement(percentageScore, answeredQuestions, totalQuestions);
-        feedbackResponse.summary = generateSummary(percentageScore, answeredQuestions, totalQuestions, correctAnswers);
-      }
-      feedback = feedbackResponse;
-    } catch (err) {
-      feedback = { error: "Failed to generate feedback" };
-    }
-    // Ensure feedback is always set with proper scoring
-    if (!feedback) {
-      // Calculate score based on percentage of total questions
-      let score;
-      if (percentageScore === 0) {
-        score = 0;
-      } else {
-        // Convert percentage to score out of total questions
-        score = Math.round((percentageScore / 100) * totalQuestions);
-        // Ensure score doesn't exceed total questions
-        score = Math.min(score, totalQuestions);
-      }
-      
-      feedback = {
+    } catch (aiError) {
+      console.error("AI feedback generation failed:", aiError);
+      // Create fallback feedback
+      feedbackResponse = {
         skillsBreakdown: [
-          { skill: "Technical Knowledge", score: score, total: totalQuestions },
-          { skill: "Problem Solving", score: score, total: totalQuestions },
-          { skill: "Communication", score: score, total: totalQuestions },
-          { skill: "Code Quality", score: score, total: totalQuestions },
-          { skill: "System Design", score: score, total: totalQuestions }
+          { skill: "Technical Knowledge", score: 0 },
+          { skill: "Problem Solving", score: 0 },
+          { skill: "Communication", score: 0 },
+          { skill: "Code Quality", score: 0 },
+          { skill: "System Design", score: 0 }
         ],
-        strengths: percentageScore > 0 ? ["Session completed successfully"] : [],
-        areasForImprovement: percentageScore === 0 ? ["No answers were provided", "Complete all questions to get meaningful feedback"] : ["Feedback generation failed", "Please try again later"],
-        summary: percentageScore === 0 ? "No answers were provided for this session. Please complete all questions to receive proper feedback." : `Session completed with ${percentageScore}% accuracy. Feedback generation encountered an error.`
+        strengths: ["Session completed successfully"],
+        areasForImprovement: ["AI feedback generation failed", "Please try again later"],
+        summary: "Session completed. AI feedback generation encountered an error."
       };
     }
     
-    session.feedback = feedback;
+    session.feedback = feedbackResponse;
     await session.save();
-    res.status(200).json({ message: "Submitted successfully", score: percentageScore, feedback });
+    res.status(200).json({ message: "Submitted successfully", score: percentageScore, feedback: feedbackResponse });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
