@@ -271,12 +271,9 @@ const InterviewPrep = () => {
   };
 
   useEffect(() => {
-    if (sessionId) {
-      fetchSessionDetailsById();
-    }
-
-    return () => {};
-  }, []);
+    fetchSessionDetailsById();
+    // eslint-disable-next-line
+  }, [sessionId]);
 
   // Add this useEffect to handle scrolling after pagination
   useEffect(() => {
@@ -311,6 +308,7 @@ const InterviewPrep = () => {
             ? moment(sessionData.updatedAt).format("Do MMM YYYY")
             : ""
         }
+        isCodingTest={false}
       />
       <div className="flex flex-row w-full">
         {/* left panel: Mini Map */}
@@ -378,6 +376,9 @@ const InterviewPrep = () => {
         <div className="container w-3/4 flex-1 flex flex-col pt-4 pb-4 px-6 md:px-8">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold color-black">Interview Q & A</h2>
+          <div className="flex items-center space-x-4">
+            {/* Removed EyeIcon for cheating detection */}
+          </div>
           {/* Right-side Pagination Controls */}
           {sessionData?.questions && sessionData.questions.length > QUESTIONS_PER_PAGE && (
             <div className="flex items-center gap-1">
@@ -507,14 +508,25 @@ const InterviewPrep = () => {
           )}
   
             {sessionData?.isFinalSubmitted && (
-            <div className="text-center mt-6 px-4 py-2 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300 backdrop-blur-sm">
-              <div className="text-blue-800 font-medium text-sm flex items-center justify-center gap-2">
-                <span className="text-blue-600"></span>
-                This session has been submitted. You may only review your answers.
-                <span className="text-blue-600"></span>
+              <div className="flex justify-center mt-8 mb-6">
+                <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-2xl relative overflow-hidden">
+                  {/* Water glass layers */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
+                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-green-50/20 to-blue-50/20 rounded-2xl"></div>
+                  
+                  <div className="relative z-10 text-center">
+                    <div className="flex items-center justify-center mb-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse mr-3"></div>
+                      <h3 className="text-lg font-semibold text-green-800">Session Submitted</h3>
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse ml-3"></div>
+                    </div>
+                    <p className="text-green-700 font-medium text-sm leading-relaxed">
+                      This session has been submitted. You may only review your answers.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {score !== null && (
             null
@@ -544,52 +556,7 @@ const InterviewPrep = () => {
             </div>
           )}
 
-          {/* User Feedback Form */}
-          {sessionData?.isFinalSubmitted && (
-            <div className="mt-8 p-6 rounded-lg bg-white border border-gray-200">
-              <h3 className="text-lg font-bold mb-2 text-orange-600">Your Feedback</h3>
-              {sessionData.userFeedback ? (
-                <div className="mb-2">
-                  <div className="text-gray-700">{sessionData.userFeedback}</div>
-                </div>
-              ) : (
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    setIsSavingUserFeedback(true);
-                    try {
-                      await axiosInstance.post(API_PATHS.SESSION.USER_FEEDBACK(sessionId), {
-                        userFeedback: userFeedbackInput,
-                      });
-                      toast.success("Your feedback has been saved!");
-                      setUserFeedbackSaved(true);
-                      fetchSessionDetailsById();
-                    } catch (err) {
-                      toast.error("Failed to save feedback");
-                    } finally {
-                      setIsSavingUserFeedback(false);
-                    }
-                  }}
-                >
-                  <textarea
-                    className="w-full border border-gray-300 rounded p-2 mb-2"
-                    rows={4}
-                    placeholder="Share your thoughts about this session..."
-                    value={userFeedbackInput}
-                    onChange={(e) => setUserFeedbackInput(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors"
-                    disabled={isSavingUserFeedback || !userFeedbackInput.trim()}
-                  >
-                    {isSavingUserFeedback ? "Saving..." : "Submit Feedback"}
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
+          {/* User Feedback Form - HIDDEN */}
           </div>
         </div>
   

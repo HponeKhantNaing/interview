@@ -45,6 +45,7 @@ const QuestionCard = ({
         const endpoint = customApiEndpoint || API_PATHS.QUESTION.ANSWER(questionId);
         console.log('Auto-saving answer for question:', questionId, 'Answer:', userAnswer);
         setIsSaving(true);
+        
         axiosInstance.post(endpoint, {
           answer: userAnswer,
         }).then(() => {

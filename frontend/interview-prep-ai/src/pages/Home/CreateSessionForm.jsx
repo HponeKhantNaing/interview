@@ -92,7 +92,7 @@ const CreateSessionForm = () => {
       </h3>
       <p className="text-[14px] text-slate-700 mt-[5px] mb-6">
         Fill out a few quick details and unlock your personalized set of
-        coding questions!
+        AI-generated interview questions!
       </p>
 
       <form onSubmit={handleCreateSession} className="flex flex-col gap-4">
@@ -116,6 +116,7 @@ const CreateSessionForm = () => {
           selectedTopics={formData.topicsToFocus ? formData.topicsToFocus.split(",").map(t => t.trim()).filter(Boolean) : []}
           onTopicsChange={(topics) => handleChange("topicsToFocus", topics)}
           label="Topics to Focus On"
+          isCodingTest={false}
         />
 
         <Input

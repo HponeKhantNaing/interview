@@ -150,6 +150,7 @@ const InterviewTest = () => {
           <div className="w-[90vw] md:w-[35vw] p-7 flex flex-col justify-center">
             <form onSubmit={handleAddSession} className="flex flex-col gap-4">
               <h3 className="text-2xl font-semibold text-black mb-2">Create a New Coding Test</h3>
+              <p className="text-sm text-gray-600 mb-4">This will create a coding test using questions from our curated dataset. Only dataset topics are available for coding tests.</p>
               <Input
                 value={form.role}
                 onChange={({ target }) => handleChange("role", target.value)}
@@ -170,6 +171,7 @@ const InterviewTest = () => {
                 selectedTopics={form.topicsToFocus ? form.topicsToFocus.split(",").map(t => t.trim()).filter(Boolean) : []}
                 onTopicsChange={(topics) => handleChange("topicsToFocus", topics)}
                 label="Topics to Focus On"
+                isCodingTest={true}
               />
               <Input
                 value={form.description}

@@ -222,6 +222,7 @@ const InterviewTestSession = () => {
             ? moment(session.updatedAt).format("Do MMM YYYY")
             : ""
         }
+        isCodingTest={true}
       />
       <div className="flex flex-row w-full">
         {/* left panel: Mini Map */}
@@ -378,16 +379,21 @@ const InterviewTestSession = () => {
 
             {/* Submission Message - Water Glass Effect */}
             {isFinalSubmitted && (
-              <div className="text-center mt-6 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-2xl relative overflow-hidden">
-                {/* Water glass layers */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-green-50/20 to-blue-50/20 rounded-2xl"></div>
-                
-                <div className="relative z-10">
-                  <div className="text-green-800 font-medium text-sm flex items-center justify-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    This coding test has been submitted. You may only review your answers.
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              <div className="flex justify-center mt-8 mb-6">
+                <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-2xl relative overflow-hidden">
+                  {/* Water glass layers */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
+                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-green-50/20 to-blue-50/20 rounded-2xl"></div>
+                  
+                  <div className="relative z-10 text-center">
+                    <div className="flex items-center justify-center mb-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse mr-3"></div>
+                      <h3 className="text-lg font-semibold text-green-800">Session Submitted</h3>
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse ml-3"></div>
+                    </div>
+                    <p className="text-green-700 font-medium text-sm leading-relaxed">
+                      This coding test has been submitted. You may only review your answers.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -405,49 +411,7 @@ const InterviewTestSession = () => {
               </div>
             )}
 
-            {/* User Feedback Form - Water Glass Effect */}
-            {isFinalSubmitted && (
-              <div className="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-2xl relative overflow-hidden">
-                {/* Water glass layers */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-orange-50/20 to-yellow-50/20 rounded-2xl"></div>
-                
-                <div className="relative z-10">
-                  <h3 className="text-lg font-semibold text-orange-800 mb-4 flex items-center">
-                    <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-yellow-500 rounded-full mr-3"></div>
-                    Your Feedback
-                  </h3>
-                  
-                  {session.userFeedback ? (
-                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
-                      <div className="text-gray-700 leading-relaxed">{session.userFeedback}</div>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleUserFeedback} className="space-y-4">
-                      <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
-                        <textarea
-                          className="w-full bg-transparent border-none outline-none resize-none text-gray-700 placeholder-gray-500"
-                          rows={4}
-                          placeholder="Share your thoughts about this coding test session..."
-                          value={userFeedbackInput}
-                          onChange={(e) => setUserFeedbackInput(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="flex justify-end">
-                        <button
-                          type="submit"
-                          className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-6 py-2 rounded-xl hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 text-sm font-medium shadow-lg backdrop-blur-sm"
-                          disabled={isSavingUserFeedback || !userFeedbackInput.trim()}
-                        >
-                          {isSavingUserFeedback ? "Saving..." : "Submit Feedback"}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* User Feedback Form - HIDDEN */}
 
             {/* Feedback Modal/Page - Dashboard Design */}
             {showFeedback && (

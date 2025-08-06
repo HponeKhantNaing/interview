@@ -7,6 +7,7 @@ const RoleInfoHeader = ({
   questions,
   description,
   lastUpdated,
+  isCodingTest = false,
 }) => {
   return <div className="bg-white relative">
       <div className="container mx-auto px-10 md:px-0">
@@ -17,7 +18,14 @@ const RoleInfoHeader = ({
                 <div>
                   <h2 className="text-2xl font-medium">{role}</h2>
                   <p className="text-sm text-medium text-gray-900 mt-1">
-                    {topicsToFocus}
+                    {isCodingTest ? (
+                      <>
+                        <span className="text-blue-600 font-medium">Topics: </span>
+                        {topicsToFocus}
+                      </>
+                    ) : (
+                      topicsToFocus
+                    )}
                   </p>
                 </div>
               </div>
@@ -25,6 +33,11 @@ const RoleInfoHeader = ({
           </div>
 
           <div className="flex items-center gap-3 mt-4">
+            {isCodingTest && (
+              <div className="text-[10px] font-semibold text-white bg-blue-600 px-3 py-1 rounded-full">
+                Coding Test
+              </div>
+            )}
             <div className="text-[10px] font-semibold text-white bg-black px-3 py-1 rounded-full">
               Experience: {experience} {experience == 1 ? "Year" : "Years"}
             </div>

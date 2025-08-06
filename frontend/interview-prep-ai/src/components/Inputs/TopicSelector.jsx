@@ -3,14 +3,17 @@ import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import SpinnerLoader from "../Loader/SpinnerLoader";
 
-const TopicSelector = ({ selectedTopics, onTopicsChange, label = "Topics to Focus On" }) => {
+const TopicSelector = ({ selectedTopics, onTopicsChange, label = "Topics to Focus On", isCodingTest = false }) => {
   const [availableTopics, setAvailableTopics] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchAvailableTopics();
-  }, []);
+    // Only fetch dataset topics for coding tests
+    if (isCodingTest) {
+      fetchAvailableTopics();
+    }
+  }, [isCodingTest]);
 
   const fetchAvailableTopics = async () => {
     setIsLoading(true);
@@ -60,38 +63,40 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, label = "Topics to Focu
     <div className="flex flex-col gap-2">
       <label className="text-sm font-medium text-gray-700">{label}</label>
       
-      {/* Available Topics Selection */}
-      <div className="mb-3">
-        <p className="text-xs text-gray-600 mb-2">Available topics from dataset:</p>
-        <div className="flex flex-wrap gap-2">
-          {availableTopics.map((topic) => (
-            <button
-              key={topic}
-              type="button"
-              onClick={() => handleTopicToggle(topic)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                selectedTopics.includes(topic)
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:border-blue-300"
-              }`}
-            >
-              {topic}
-            </button>
-          ))}
+      {isCodingTest ? (
+        // Coding Test: Show dataset topics only
+        <div className="mb-3">
+          <p className="text-xs text-gray-600 mb-2">Available topics from dataset (only include these in coding tests):</p>
+          <div className="flex flex-wrap gap-2">
+            {availableTopics.map((topic) => (
+              <button
+                key={topic}
+                type="button"
+                onClick={() => handleTopicToggle(topic)}
+                className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                  selectedTopics.includes(topic)
+                    ? "bg-blue-500 text-white border-blue-500"
+                    : "bg-white text-gray-700 border-gray-300 hover:border-blue-300"
+                }`}
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Manual Input */}
-      <div>
-        <p className="text-xs text-gray-600 mb-2">Or enter topics manually (comma-separated):</p>
-        <input
-          type="text"
-          value={selectedTopics}
-          onChange={handleManualInput}
-          placeholder="(e.g., Python, Java, JavaScript)"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      </div>
+      ) : (
+        // AI Dashboard: Show manual input only
+        <div>
+          <p className="text-xs text-gray-600 mb-2">Enter topics manually for AI-generated questions (comma-separated):</p>
+          <input
+            type="text"
+            value={selectedTopics}
+            onChange={handleManualInput}
+            placeholder="(e.g., Python, Java, JavaScript, System Design, Algorithms)"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      )}
 
       {error && (
         <p className="text-red-500 text-xs">{error}</p>
