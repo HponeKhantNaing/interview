@@ -32,6 +32,7 @@ const authRoutes = require('./routes/authRoutes')
 const sessionRoutes = require('./routes/sessionRoutes')
 const questionRoutes = require('./routes/questionRoutes');
 const actualRoutes = require('./routes/actualRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
 const { protect } = require("./middlewares/authMiddleware");
 const { generateInterviewQuestions, generateConceptExplanation, generateFeedbackAPI, checkAnswerWithAI } = require("./controllers/aiController");
 const { checkAndAutoSubmitExpiredSessions } = require("./utils/timerUtils");
@@ -57,6 +58,7 @@ app.use("/api/auth", authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/actual', actualRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 app.post("/api/ai/generate-questions", protect, generateInterviewQuestions);
 app.post("/api/ai/generate-explanation", protect, generateConceptExplanation);

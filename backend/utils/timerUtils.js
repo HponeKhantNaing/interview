@@ -1,5 +1,6 @@
 const Session = require("../models/Session");
 const Actual = require("../models/Actual");
+const Feedback = require("../models/Feedback");
 const { generateFeedback } = require("../controllers/aiController");
 const axios = require("axios");
 
@@ -139,6 +140,58 @@ const autoSubmitSession = async (sessionId, sessionType = 'session') => {
           }
           
           session.feedback = feedback;
+          
+          // Store feedback in dedicated feedback table
+          try {
+            const feedbackData = {
+              user: session.user,
+              sessionId: session._id,
+              sessionType: sessionType,
+              role: session.role,
+              experience: session.experience,
+              topicsToFocus: session.topicsToFocus,
+              skillsBreakdown: feedback.skillsBreakdown,
+              strengths: feedback.strengths,
+              areasForImprovement: feedback.areasForImprovement,
+              summary: feedback.summary,
+              percentageScore: percentageScore,
+              totalQuestions: totalQuestions,
+              answeredQuestions: answeredQuestions,
+              correctAnswers: correctAnswers,
+              submissionTime: session.submissionTime,
+              performanceMetrics: {
+                answerRate: (answeredQuestions / totalQuestions) * 100,
+                accuracyRate: percentageScore,
+                averageAnswerLength: session.questions.reduce((sum, q) => sum + (q.userAnswer ? q.userAnswer.length : 0), 0) / answeredQuestions || 0,
+                codeQuestionsAnswered: session.questions.filter(q => q.type === 'coding' && q.userAnswer && q.userAnswer.trim().length > 0).length,
+                technicalQuestionsAnswered: session.questions.filter(q => q.type === 'technical' && q.userAnswer && q.userAnswer.trim().length > 0).length,
+                questionsWithCode: session.questions.filter(q => q.userAnswer && q.userAnswer.includes('```')).length,
+                timeEfficiency: session.submissionTime ? (answeredQuestions / session.submissionTime) * 60 : 0
+              }
+            };
+
+            // Check if feedback already exists for this session
+            const existingFeedback = await Feedback.findOne({
+              sessionId: session._id,
+              sessionType: sessionType,
+              user: session.user
+            });
+
+            if (existingFeedback) {
+              // Update existing feedback
+              Object.assign(existingFeedback, feedbackData);
+              await existingFeedback.save();
+              console.log("Auto-submission feedback updated in feedback table:", existingFeedback._id);
+            } else {
+              // Create new feedback
+              const newFeedback = new Feedback(feedbackData);
+              await newFeedback.save();
+              console.log("Auto-submission feedback stored in feedback table:", newFeedback._id);
+            }
+          } catch (feedbackError) {
+            console.error("Error storing auto-submission feedback in feedback table:", feedbackError);
+            // Continue even if feedback table storage fails
+          }
         } catch (err) {
         console.error("Auto-submission feedback generation failed:", err);
         // Create fallback feedback for auto-submission with proper scoring
@@ -153,7 +206,7 @@ const autoSubmitSession = async (sessionId, sessionType = 'session') => {
           score = Math.min(score, totalQuestions);
         }
         
-        session.feedback = {
+        const fallbackFeedback = {
           skillsBreakdown: [
             { skill: "Technical Knowledge", score: score, total: totalQuestions },
             { skill: "Problem Solving", score: score, total: totalQuestions },
@@ -165,6 +218,60 @@ const autoSubmitSession = async (sessionId, sessionType = 'session') => {
           areasForImprovement: percentageScore === 0 ? ["No answers were provided", "Complete all questions to get meaningful feedback"] : ["AI feedback generation failed", "Please try again later"],
           summary: percentageScore === 0 ? "No answers were provided for this session. Please complete all questions to receive proper feedback." : `Session completed with ${percentageScore}% accuracy. AI feedback generation encountered an error.`
         };
+        
+        session.feedback = fallbackFeedback;
+        
+        // Store fallback feedback in feedback table
+        try {
+          const feedbackData = {
+            user: session.user,
+            sessionId: session._id,
+            sessionType: sessionType,
+            role: session.role,
+            experience: session.experience,
+            topicsToFocus: session.topicsToFocus,
+            skillsBreakdown: fallbackFeedback.skillsBreakdown,
+            strengths: fallbackFeedback.strengths,
+            areasForImprovement: fallbackFeedback.areasForImprovement,
+            summary: fallbackFeedback.summary,
+            percentageScore: percentageScore,
+            totalQuestions: totalQuestions,
+            answeredQuestions: answeredQuestions,
+            correctAnswers: correctAnswers,
+            submissionTime: session.submissionTime,
+            performanceMetrics: {
+              answerRate: (answeredQuestions / totalQuestions) * 100,
+              accuracyRate: percentageScore,
+              averageAnswerLength: session.questions.reduce((sum, q) => sum + (q.userAnswer ? q.userAnswer.length : 0), 0) / answeredQuestions || 0,
+              codeQuestionsAnswered: session.questions.filter(q => q.type === 'coding' && q.userAnswer && q.userAnswer.trim().length > 0).length,
+              technicalQuestionsAnswered: session.questions.filter(q => q.type === 'technical' && q.userAnswer && q.userAnswer.trim().length > 0).length,
+              questionsWithCode: session.questions.filter(q => q.userAnswer && q.userAnswer.includes('```')).length,
+              timeEfficiency: session.submissionTime ? (answeredQuestions / session.submissionTime) * 60 : 0
+            }
+          };
+
+          // Check if feedback already exists for this session
+          const existingFeedback = await Feedback.findOne({
+            sessionId: session._id,
+            sessionType: sessionType,
+            user: session.user
+          });
+
+          if (existingFeedback) {
+            // Update existing feedback
+            Object.assign(existingFeedback, feedbackData);
+            await existingFeedback.save();
+            console.log("Auto-submission fallback feedback updated in feedback table:", existingFeedback._id);
+          } else {
+            // Create new feedback
+            const newFeedback = new Feedback(feedbackData);
+            await newFeedback.save();
+            console.log("Auto-submission fallback feedback stored in feedback table:", newFeedback._id);
+          }
+        } catch (feedbackError) {
+          console.error("Error storing auto-submission fallback feedback in feedback table:", feedbackError);
+          // Continue even if feedback table storage fails
+        }
       }
 
     await session.save();

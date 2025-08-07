@@ -1,5 +1,6 @@
 const Session = require("../models/Session");
 const Question = require("../models/Question");
+const Feedback = require("../models/Feedback");
 const { generateFeedback } = require("./aiController");
 const { calculateRemainingTime } = require("../utils/timerUtils");
 const stringSimilarity = require('string-similarity');
@@ -461,6 +462,58 @@ exports.finalSubmitSession = async (req, res) => {
     // Save feedback to session
     session.feedback = feedbackResponse;
     await session.save();
+    
+    // Store feedback in dedicated feedback table
+    try {
+      const feedbackData = {
+        user: session.user,
+        sessionId: session._id,
+        sessionType: "session",
+        role: session.role,
+        experience: session.experience,
+        topicsToFocus: session.topicsToFocus,
+        skillsBreakdown: feedbackResponse.skillsBreakdown,
+        strengths: feedbackResponse.strengths,
+        areasForImprovement: feedbackResponse.areasForImprovement,
+        summary: feedbackResponse.summary,
+        percentageScore: percentageScore,
+        totalQuestions: totalQuestions,
+        answeredQuestions: answeredQuestions,
+        correctAnswers: correctAnswers,
+        submissionTime: session.submissionTime,
+        performanceMetrics: {
+          answerRate: (answeredQuestions / totalQuestions) * 100,
+          accuracyRate: percentageScore,
+          averageAnswerLength: session.questions.reduce((sum, q) => sum + (q.userAnswer ? q.userAnswer.length : 0), 0) / answeredQuestions || 0,
+          codeQuestionsAnswered: session.questions.filter(q => q.type === 'coding' && q.userAnswer && q.userAnswer.trim().length > 0).length,
+          technicalQuestionsAnswered: session.questions.filter(q => q.type === 'technical' && q.userAnswer && q.userAnswer.trim().length > 0).length,
+          questionsWithCode: session.questions.filter(q => q.userAnswer && q.userAnswer.includes('```')).length,
+          timeEfficiency: session.submissionTime ? (answeredQuestions / session.submissionTime) * 60 : 0
+        }
+      };
+
+      // Check if feedback already exists for this session
+      const existingFeedback = await Feedback.findOne({
+        sessionId: session._id,
+        sessionType: "session",
+        user: session.user
+      });
+
+      if (existingFeedback) {
+        // Update existing feedback
+        Object.assign(existingFeedback, feedbackData);
+        await existingFeedback.save();
+        console.log("Feedback updated in feedback table:", existingFeedback._id);
+      } else {
+        // Create new feedback
+        const newFeedback = new Feedback(feedbackData);
+        await newFeedback.save();
+        console.log("Feedback stored in feedback table:", newFeedback._id);
+      }
+    } catch (feedbackError) {
+      console.error("Error storing feedback in feedback table:", feedbackError);
+      // Continue with the response even if feedback table storage fails
+    }
     
     // Debug log
     console.log("Feedback saved to session:", session._id);

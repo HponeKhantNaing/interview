@@ -45,4 +45,11 @@ export const API_PATHS = {
     DELETE: (id) => `/api/actual/${id}`,
     GET_AVAILABLE_TOPICS: "/api/actual/available-topics",
   },
+
+  FEEDBACK: {
+    STORE: "/api/feedback/store", // Store feedback in dedicated table
+    GET_BY_SESSION: (sessionId, sessionType) => `/api/feedback/${sessionId}/${sessionType}`, // Get feedback by session
+    GET_USER_FEEDBACK: "/api/feedback/user", // Get all feedback for user
+    DELETE: (id) => `/api/feedback/${id}`, // Delete feedback
+  },
 };
