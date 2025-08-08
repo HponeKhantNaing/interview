@@ -113,7 +113,7 @@ const CreateSessionForm = () => {
         />
 
         <TopicSelector
-          selectedTopics={formData.topicsToFocus ? formData.topicsToFocus.split(",").map(t => t.trim()).filter(Boolean) : []}
+          selectedTopics={formData.topicsToFocus || ""}
           onTopicsChange={(topics) => handleChange("topicsToFocus", topics)}
           label="Topics to Focus On"
           isCodingTest={false}

@@ -37,15 +37,19 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, label = "Topics to Focu
   };
 
   const handleTopicToggle = (topic) => {
-    const updatedTopics = selectedTopics.includes(topic)
-      ? selectedTopics.filter(t => t !== topic)
-      : [...selectedTopics, topic];
+    // Ensure selectedTopics is always treated as an array for coding tests
+    const topicsArray = Array.isArray(selectedTopics) ? selectedTopics : [];
+    const updatedTopics = topicsArray.includes(topic)
+      ? topicsArray.filter(t => t !== topic)
+      : [...topicsArray, topic];
     
     onTopicsChange(updatedTopics.join(", "));
   };
 
   const handleManualInput = (e) => {
-    onTopicsChange(e.target.value);
+    // Allow all characters including commas and spaces
+    const value = e.target.value;
+    onTopicsChange(value);
   };
 
   if (isLoading) {
@@ -74,7 +78,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, label = "Topics to Focu
                 type="button"
                 onClick={() => handleTopicToggle(topic)}
                 className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                  selectedTopics.includes(topic)
+                  (Array.isArray(selectedTopics) ? selectedTopics : []).includes(topic)
                     ? "bg-blue-500 text-white border-blue-500"
                     : "bg-white text-gray-700 border-gray-300 hover:border-blue-300"
                 }`}
@@ -90,8 +94,12 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, label = "Topics to Focu
           <p className="text-xs text-gray-600 mb-2">Enter topics for generated questions (comma-separated):</p>
           <input
             type="text"
-            value={selectedTopics}
+            value={selectedTopics || ""}
             onChange={handleManualInput}
+            onKeyDown={(e) => {
+              // Allow all keys including comma, space, and other special characters
+              e.stopPropagation();
+            }}
             placeholder="(e.g., Python, Java, JavaScript, System Design, Algorithms)"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
