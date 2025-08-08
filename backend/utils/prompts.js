@@ -2,7 +2,8 @@ const questionAnswerPrompt = (
   role,
   experience,
   topicsToFocus,
-  numberOfQuestions
+  numberOfQuestions,
+  existingQuestions = null
 ) => `
     You are an AI trained to generate technical interview questions and answers.
     
@@ -13,6 +14,7 @@ const questionAnswerPrompt = (
     - Write ${numberOfQuestions} interview questions.
     - The questions must be balanced: 2/3 should be technical and knowledge questions (type: 'technical'), and 1/3 should be coding questions (type: 'coding').
     - Distribute the questions evenly and fairly across all the provided topics/skills (from both manual input and PDF). Do NOT focus only on one topic; ensure all topics are represented in the questions.
+    ${existingQuestions ? `- IMPORTANT: Avoid generating questions that are similar to these existing questions:\n${existingQuestions}\n- Generate completely new and different questions.` : ''}
     - For each question, add a 'type' field: 'technical' for technical/knowledge questions, 'coding' for coding questions.
     - For each question, generate a detailed but beginner-friendly answer.
     - If the answer needs a code example, add a small code block inside (especially for coding questions).

@@ -16,10 +16,24 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 // @access  Private
 const generateInterviewQuestions = async (req, res) => {
   try {
-    let { role, experience, topicsToFocus, numberOfQuestions, pdf, description, projects } = req.body;
+    let { role, experience, topicsToFocus, numberOfQuestions, pdf, description, projects, sessionId } = req.body;
     const numQuestions = numberOfQuestions || 5;
     if (!role || !experience || !topicsToFocus || !numQuestions) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Check for existing questions if sessionId is provided
+    let existingQuestions = [];
+    if (sessionId) {
+      try {
+        const Session = require("../models/Session");
+        const session = await Session.findById(sessionId).populate('questions');
+        if (session && session.questions) {
+          existingQuestions = session.questions.map(q => q.question.toLowerCase().trim());
+        }
+      } catch (error) {
+        console.log("Could not fetch existing questions:", error.message);
+      }
     }
 
     // Extract data from PDF if provided
@@ -72,12 +86,25 @@ const generateInterviewQuestions = async (req, res) => {
     const finalProjects = (projects && projects.length) ? projects : pdfProjects;
 
     // Compose prompt for balanced questions
-    const prompt = questionAnswerPrompt(
-      finalRole,
-      experience,
-      combinedTopics,
-      numQuestions
-    );
+    let prompt;
+    if (existingQuestions.length > 0) {
+      // Include existing questions in prompt to avoid repetition
+      const existingQuestionsText = existingQuestions.slice(0, 10).join('\n- '); // Limit to first 10 for prompt size
+      prompt = questionAnswerPrompt(
+        finalRole,
+        experience,
+        combinedTopics,
+        numQuestions,
+        existingQuestionsText
+      );
+    } else {
+      prompt = questionAnswerPrompt(
+        finalRole,
+        experience,
+        combinedTopics,
+        numQuestions
+      );
+    }
 
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-lite",

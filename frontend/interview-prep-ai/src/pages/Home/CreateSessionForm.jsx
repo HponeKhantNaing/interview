@@ -13,7 +13,6 @@ const CreateSessionForm = () => {
     experience: "",
     topicsToFocus: "",
     description: "",
-    numberOfQuestions: 10, // Add default
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +32,7 @@ const CreateSessionForm = () => {
   const handleCreateSession = async (e) => {
     e.preventDefault();
 
-    const { role, experience, topicsToFocus, numberOfQuestions } = formData;
+    const { role, experience, topicsToFocus } = formData;
 
     if (!role || !experience || !topicsToFocus) {
       setError("Please fill all the required fields.");
@@ -62,7 +61,7 @@ const CreateSessionForm = () => {
           role,
           experience,
           topicsToFocus,
-          numberOfQuestions,
+          numberOfQuestions: 25, // Always generate 25 questions
           pdf: pdfInfo, // Pass PDF info to backend for skill extraction
         }
       );
@@ -92,7 +91,7 @@ const CreateSessionForm = () => {
       </h3>
       <p className="text-[14px] text-slate-700 mt-[5px] mb-6">
         Fill out a few quick details and unlock your personalized set of
-        AI-generated interview questions!
+        25 AI-generated interview questions!
       </p>
 
       <form onSubmit={handleCreateSession} className="flex flex-col gap-4">
@@ -125,16 +124,6 @@ const CreateSessionForm = () => {
           label="Description"
           placeholder="(Any specific goals or notes for this session)"
           type="text"
-        />
-
-        <Input
-          value={formData.numberOfQuestions}
-          onChange={({ target }) => handleChange("numberOfQuestions", Number(target.value))}
-          label="Number of Questions"
-          placeholder="(e.g., 5, 10, 15, 30)"
-          type="number"
-          min={2}
-          max={30}
         />
 
         <PDFDropzone pdfFile={pdfFile} setPdfFile={setPdfFile} />

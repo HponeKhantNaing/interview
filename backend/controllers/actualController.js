@@ -169,7 +169,7 @@ exports.createActualSession = async (req, res) => {
     const topics = userTopics.length > 0 ? userTopics : defaultTopics;
     console.log('Using topics:', topics);
     
-    const selectedQuestions = filterAndSampleQuestions(dataset, topics, 5);
+    const selectedQuestions = filterAndSampleQuestions(dataset, topics, 10); // Fixed set of 10 questions
     console.log(`Selected ${selectedQuestions.length} questions`);
     
     // Store questions in DB

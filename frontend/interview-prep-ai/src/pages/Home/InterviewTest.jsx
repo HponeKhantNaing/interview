@@ -88,18 +88,20 @@ const InterviewTest = () => {
           {isLoading && <SpinnerLoader />}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pt-1 pb-6 px-4 md:px-0">
             {sessions.map((data, index) => (
-              <div key={data._id}>
-                <SummaryCard
-                  colors={CARD_BG[index % CARD_BG.length]}
-                  role={data.role}
-                  topicsToFocus={data.topicsToFocus}
-                  experience={data.experience}
-                  questions={data.questions?.length || 0}
-                  description={data.description}
-                  lastUpdated={data.updatedAt?.slice(0, 10)}
-                  onSelect={() => navigate(`/interview-test/${data._id}`)}
-                  onDelete={() => setOpenDeleteAlert({ open: true, data })}
-                />
+              <div key={data._id} className="h-full flex flex-col">
+                <div className="flex-1 h-full min-h-[400px]">
+                  <SummaryCard
+                    colors={CARD_BG[index % CARD_BG.length]}
+                    role={data.role}
+                    topicsToFocus={data.topicsToFocus}
+                    experience={data.experience}
+                    questions={data.questions?.length || 0}
+                    description={data.description}
+                    lastUpdated={data.updatedAt?.slice(0, 10)}
+                    onSelect={() => navigate(`/interview-test/${data._id}`)}
+                    onDelete={() => setOpenDeleteAlert({ open: true, data })}
+                  />
+                </div>
                 {expandedSessionId === data._id && data.questions && (
                   <div className="mt-4">
                     {data.questions.map((q, idx) => (

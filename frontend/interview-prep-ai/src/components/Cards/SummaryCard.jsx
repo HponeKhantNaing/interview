@@ -25,7 +25,7 @@ const SummaryCard = ({
   };
 
   return (
-    <div className="relative perspective-1000">
+    <div className="relative perspective-1000 h-full overflow-hidden">
       <motion.div
         className="relative w-full h-full"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
@@ -74,7 +74,7 @@ const SummaryCard = ({
 
             {/* Main card content */}
             <motion.div
-              className="relative h-full bg-gradient-to-br from-white/95 to-white/85 backdrop-blur-sm border border-white/50 rounded-2xl p-6 cursor-pointer"
+              className="relative h-full bg-gradient-to-br from-white/95 to-white/85 backdrop-blur-sm border border-white/50 rounded-2xl p-6 cursor-pointer flex flex-col"
               style={{
                 background: `linear-gradient(135deg, ${colors.bgcolor}15, ${colors.bgcolor}25)`,
                 boxShadow: isHovered 
@@ -82,8 +82,7 @@ const SummaryCard = ({
                   : "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)"
               }}
               whileHover={{ 
-                y: -8,
-                scale: 1.02,
+                scale: 1.01,
               }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               onClick={handleCardClick}
@@ -177,7 +176,7 @@ const SummaryCard = ({
               </div>
 
               {/* Description */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
                   {description}
                 </p>

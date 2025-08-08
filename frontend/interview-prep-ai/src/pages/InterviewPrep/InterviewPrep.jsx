@@ -240,7 +240,8 @@ const InterviewPrep = () => {
           role: sessionData?.role,
           experience: sessionData?.experience,
           topicsToFocus: sessionData?.topicsToFocus,
-          numberOfQuestions: 10,
+          numberOfQuestions: 25, // Changed to 25 questions
+          sessionId: sessionId, // Pass sessionId to avoid repetition
         }
       );
 
@@ -256,7 +257,7 @@ const InterviewPrep = () => {
       );
 
       if (response.data) {
-        toast.success("Added More Q&A!!");
+        toast.success("Added 25 More Q&A!!");
         fetchSessionDetailsById();
       }
     } catch (error) {

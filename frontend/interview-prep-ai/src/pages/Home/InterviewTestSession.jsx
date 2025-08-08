@@ -365,6 +365,37 @@ const InterviewTestSession = () => {
               ));
             })()}
 
+            {/* Pagination Controls */}
+            {session?.questions && session.questions.length > QUESTIONS_PER_PAGE && (
+              <div className="flex justify-center mt-6 gap-2">
+                <button
+                  className="px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-50"
+                  onClick={() => {
+                    setCurrentPage((prev) => Math.max(prev - 1, 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                <span className="px-2 py-1 font-medium">
+                  Page {currentPage} of {Math.ceil(session.questions.length / QUESTIONS_PER_PAGE)}
+                </span>
+                <button
+                  className="px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-50"
+                  onClick={() => {
+                    setCurrentPage((prev) =>
+                      Math.min(prev + 1, Math.ceil(session.questions.length / QUESTIONS_PER_PAGE))
+                    );
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === Math.ceil(session.questions.length / QUESTIONS_PER_PAGE)}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
             {/* Final Submit Button */}
             {!isFinalSubmitted && session.questions?.length > 0 && (
               <div className="flex justify-center mt-8">
