@@ -143,7 +143,10 @@ const CreateSessionForm = () => {
 
         <button
           type="submit"
-          className="btn-primary w-full mt-2 text-white bg-linear-to-r from-[#FF9324] to-[#e99a4b] hover:bg-orange-500 transition ease-in-out duration-100 cursor-pointer p-2 rounded-md"
+          className="btn-primary w-full mt-2 text-white transition ease-in-out duration-100 cursor-pointer p-2 rounded-md"
+          style={{ 
+            background: 'linear-gradient(to right, rgb(47, 114, 47), oklch(0.51 0.2 145.36))'
+          }}
           disabled={isLoading}
         >
         {isLoading ? <SpinnerLoader /> : 'Create Session'}

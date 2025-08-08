@@ -87,7 +87,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, label = "Topics to Focu
       ) : (
         // AI Dashboard: Show manual input only
         <div>
-          <p className="text-xs text-gray-600 mb-2">Enter topics manually for AI-generated questions (comma-separated):</p>
+          <p className="text-xs text-gray-600 mb-2">Enter topics for generated questions (comma-separated):</p>
           <input
             type="text"
             value={selectedTopics}

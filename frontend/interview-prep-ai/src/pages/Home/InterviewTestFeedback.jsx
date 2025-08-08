@@ -23,7 +23,7 @@ const InterviewTestFeedback = () => {
     fetchSession();
   }, [sessionId]);
 
-  if (loading) return <DashboardLayout><SpinnerLoader /></DashboardLayout>;
+  if (loading) return <yout><SpinnerLoader /></yout>;
   if (!session?.feedback) return <DashboardLayout><div className="p-10 text-center">No feedback available.</div></DashboardLayout>;
 
   const feedback = session.feedback;
