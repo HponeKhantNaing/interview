@@ -25,27 +25,44 @@ const SummaryCard = ({
 
   return (
     <motion.div
-      className="relative aspect-square group"
+      className="relative w-95 h-92 group"
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      whileHover={{ y: -8, scale: 1.02 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      whileHover={{ y: -12, scale: 1.03, rotateY: 2 }}
+      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ 
+        duration: 0.6, 
+        ease: [0.25, 0.46, 0.45, 0.94],
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }}
     >
       {/* Main Card Container */}
       <motion.div
-        className="relative h-full w-full bg-white rounded-2xl overflow-hidden cursor-pointer border border-gray-100 shadow-sm"
+        className="relative h-full w-full bg-gradient-to-br from-white via-slate-50 to-white rounded-3xl overflow-hidden cursor-pointer border border-slate-200/50 shadow-lg"
         style={{
           boxShadow: isHovered
-            ? "0 20px 40px -8px rgba(0, 0, 0, 0.12), 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.8)"
-            : "0 4px 16px -2px rgba(0, 0, 0, 0.06), 0 2px 8px -1px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(255, 255, 255, 0.5)"
+            ? "0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 12px 32px -8px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.9)"
+            : "0 8px 25px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.7)"
         }}
         onClick={handleCardClick}
+        whileHover={{ 
+          scale: 1.02,
+          transition: { duration: 0.3, ease: "easeOut" }
+        }}
+        whileTap={{ 
+          scale: 0.98,
+          transition: { duration: 0.1 }
+        }}
       >
-        {/* Subtle Gradient Overlay */}
+        {/* Enhanced Gradient Overlay */}
         <div 
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0 opacity-40"
           style={{
-            background: `linear-gradient(135deg, ${colors.bgcolor}08 0%, ${colors.bgcolor}04 50%, ${colors.bgcolor}06 100%)`
+            background: `linear-gradient(135deg, ${colors.bgcolor}12 0%, ${colors.bgcolor}06 30%, ${colors.bgcolor}08 70%, ${colors.bgcolor}04 100%)`
           }}
         />
 
@@ -55,76 +72,110 @@ const SummaryCard = ({
           <motion.div
             className="absolute top-4 right-4 w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"
             animate={{ 
-              scale: isHovered ? [1, 1.5, 1] : 1,
-              opacity: isHovered ? [0.6, 1, 0.6] : 0.6,
-              y: isHovered ? [0, -2, 0] : 0
+              scale: isHovered ? [1, 1.8, 1] : 1,
+              opacity: isHovered ? [0.4, 1, 0.4] : 0.4,
+              y: isHovered ? [0, -4, 0] : 0,
+              x: isHovered ? [0, 2, 0] : 0
             }}
-            transition={{ duration: 2, repeat: Infinity }}
+            transition={{ 
+              duration: 2.5, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
           />
           <motion.div
             className="absolute bottom-6 left-6 w-1.5 h-1.5 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"
             animate={{ 
-              scale: isHovered ? [1, 1.3, 1] : 1,
-              opacity: isHovered ? [0.5, 0.8, 0.5] : 0.5,
-              y: isHovered ? [0, 1, 0] : 0
+              scale: isHovered ? [1, 1.6, 1] : 1,
+              opacity: isHovered ? [0.3, 0.9, 0.3] : 0.3,
+              y: isHovered ? [0, 3, 0] : 0,
+              x: isHovered ? [0, -2, 0] : 0
             }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              delay: 0.8,
+              ease: "easeInOut"
+            }}
           />
           
-          {/* Subtle moving lines */}
+          {/* Enhanced moving lines */}
           <motion.div
-            className="absolute top-1/4 left-2 w-8 h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent"
+            className="absolute top-1/4 left-2 w-10 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent"
             animate={{ 
-              opacity: isHovered ? [0, 0.3, 0] : 0,
-              scaleX: isHovered ? [0, 1, 0] : 0
+              opacity: isHovered ? [0, 0.6, 0] : 0,
+              scaleX: isHovered ? [0, 1.2, 0] : 0,
+              x: isHovered ? [0, 4, 0] : 0
             }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              delay: 1.2,
+              ease: "easeInOut"
+            }}
           />
           <motion.div
-            className="absolute bottom-1/4 right-2 w-6 h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent"
+            className="absolute bottom-1/4 right-2 w-8 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent"
             animate={{ 
-              opacity: isHovered ? [0, 0.3, 0] : 0,
-              scaleX: isHovered ? [0, 1, 0] : 0
+              opacity: isHovered ? [0, 0.6, 0] : 0,
+              scaleX: isHovered ? [0, 1.2, 0] : 0,
+              x: isHovered ? [0, -4, 0] : 0
             }}
-            transition={{ duration: 1.2, repeat: Infinity, delay: 0.8 }}
+            transition={{ 
+              duration: 1.8, 
+              repeat: Infinity, 
+              delay: 0.6,
+              ease: "easeInOut"
+            }}
           />
         </div>
 
         {/* Content Container */}
-        <div className="relative z-10 h-full w-full flex flex-col p-4">
+        <div className="relative z-10 h-full w-full flex flex-col p-5">
           {/* Header Section */}
-          <div className="flex items-start justify-between mb-3">
+          <div className="flex items-start justify-between mb-2">
             {/* Role Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 mb-2">
-                {/* Innovative Avatar */}
+                {/* Enhanced Avatar */}
                 <motion.div
                   className="relative flex-shrink-0"
-                  whileHover={{ scale: 1.1, rotate: 2 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  whileHover={{ scale: 1.15, rotate: 3, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ 
+                    duration: 0.4, 
+                    ease: "easeOut",
+                    type: "spring",
+                    stiffness: 200
+                  }}
                 >
                   <div 
-                    className="w-10 h-10 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center shadow-sm border border-slate-200"
+                    className="w-12 h-12 bg-gradient-to-br from-slate-100 via-slate-50 to-white rounded-2xl flex items-center justify-center shadow-md border border-slate-200/60"
                   >
-                    <span className="text-base font-bold bg-gradient-to-r from-slate-600 to-slate-800 bg-clip-text text-transparent">
+                    <span className="text-lg font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
                       {getInitials(role)}
                     </span>
                   </div>
-                  {/* Animated glow */}
+                  {/* Enhanced animated glow */}
                   <motion.div
-                    className="absolute inset-0 w-10 h-10 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-xl"
+                    className="absolute inset-0 w-12 h-12 bg-gradient-to-br from-blue-400/30 to-purple-500/30 rounded-2xl"
                     animate={{ 
-                      opacity: isHovered ? [0.3, 0.6, 0.3] : 0.3,
-                      scale: isHovered ? [1, 1.05, 1] : 1
+                      opacity: isHovered ? [0.2, 0.8, 0.2] : 0.2,
+                      scale: isHovered ? [1, 1.1, 1] : 1,
+                      rotate: isHovered ? [0, 180, 360] : 0
                     }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                    transition={{ 
+                      duration: 3, 
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
                   />
                 </motion.div>
 
                 {/* Role Title */}
                 <div className="flex-1 min-w-0">
                   <motion.h3 
-                    className="text-sm font-bold text-slate-800 leading-tight mb-1"
+                    className="text-base font-bold text-slate-800 leading-tight mb-2 font-lexend"
                     animate={{ 
                       color: isHovered ? "#1e293b" : "#334155"
                     }}
@@ -133,13 +184,18 @@ const SummaryCard = ({
                     {role}
                   </motion.h3>
                   <motion.div 
-                    className="inline-flex items-center px-2 py-0.5 bg-slate-50 text-slate-600 rounded-lg text-xs font-medium border border-slate-200"
-                    whileHover={{ scale: 1.05 }}
+                    className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200/60 shadow-sm font-lexend"
+                    whileHover={{ scale: 1.08, y: -1 }}
+                    whileTap={{ scale: 0.95 }}
                     animate={{
-                      backgroundColor: isHovered ? "#f8fafc" : "#f1f5f9",
+                      backgroundColor: isHovered ? "#f1f5f9" : "#f8fafc",
                       borderColor: isHovered ? "#cbd5e1" : "#e2e8f0"
                     }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ 
+                      duration: 0.3,
+                      type: "spring",
+                      stiffness: 150
+                    }}
                   >
                     {topicsToFocus}
                   </motion.div>
@@ -160,14 +216,20 @@ const SummaryCard = ({
             </motion.button>
           </div>
 
-          {/* Compact Stats Row */}
+          {/* Enhanced Stats Row */}
           <motion.div 
-            className="flex justify-between items-center mb-3 p-2 bg-slate-50 rounded-xl border border-slate-100"
+            className="flex justify-between items-center mb-4 p-3 bg-gradient-to-r from-slate-50 via-white to-slate-50 rounded-2xl border border-slate-200/60 shadow-sm"
             animate={{
               backgroundColor: isHovered ? "#f8fafc" : "#f1f5f9",
-              borderColor: isHovered ? "#cbd5e1" : "#e2e8f0"
+              borderColor: isHovered ? "#cbd5e1" : "#e2e8f0",
+              y: isHovered ? -2 : 0,
+              scale: isHovered ? 1.02 : 1
             }}
-            transition={{ duration: 0.3 }}
+            transition={{ 
+              duration: 0.4,
+              type: "spring",
+              stiffness: 100
+            }}
           >
             {/* Experience */}
             <motion.div 
@@ -175,20 +237,20 @@ const SummaryCard = ({
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
             >
-              <motion.div 
-                className="w-5 h-5 bg-blue-100 rounded-lg flex items-center justify-center"
-                animate={{
-                  backgroundColor: isHovered ? "#dbeafe" : "#dbeafe"
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                <LuUsers size={10} className="text-blue-600" />
-              </motion.div>
+                          <motion.div 
+              className="w-6 h-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl flex items-center justify-center shadow-sm"
+              animate={{
+                backgroundColor: isHovered ? "#dbeafe" : "#dbeafe"
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <LuUsers size={12} className="text-blue-600" />
+            </motion.div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Exp</p>
-                <p className="text-xs font-semibold text-slate-800">
-                  {experience} {experience == 1 ? "Yr" : "Yrs"}
-                </p>
+                              <p className="text-xs text-slate-500 font-medium font-lexend">Exp</p>
+              <p className="text-xs font-semibold text-slate-800 font-lexend">
+                {experience} {experience == 1 ? "Yr" : "Yrs"}
+              </p>
               </div>
             </motion.div>
 
@@ -198,18 +260,18 @@ const SummaryCard = ({
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
             >
-              <motion.div 
-                className="w-5 h-5 bg-emerald-100 rounded-lg flex items-center justify-center"
-                animate={{
-                  backgroundColor: isHovered ? "#d1fae5" : "#d1fae5"
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                <LuFileText size={10} className="text-emerald-600" />
-              </motion.div>
+                          <motion.div 
+              className="w-6 h-6 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl flex items-center justify-center shadow-sm"
+              animate={{
+                backgroundColor: isHovered ? "#d1fae5" : "#d1fae5"
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <LuFileText size={12} className="text-emerald-600" />
+            </motion.div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Q's</p>
-                <p className="text-xs font-semibold text-slate-800">{questions}</p>
+                <p className="text-xs text-slate-500 font-medium font-lexend">Q's</p>
+                <p className="text-xs font-semibold text-slate-800 font-lexend">{questions}</p>
               </div>
             </motion.div>
 
@@ -219,37 +281,43 @@ const SummaryCard = ({
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
             >
-              <motion.div 
-                className="w-5 h-5 bg-orange-100 rounded-lg flex items-center justify-center"
-                animate={{
-                  backgroundColor: isHovered ? "#fed7aa" : "#fed7aa"
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                <LuClock size={10} className="text-orange-600" />
-              </motion.div>
+                          <motion.div 
+              className="w-6 h-6 bg-gradient-to-br from-orange-100 to-orange-50 rounded-xl flex items-center justify-center shadow-sm"
+              animate={{
+                backgroundColor: isHovered ? "#fed7aa" : "#fed7aa"
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <LuClock size={12} className="text-orange-600" />
+            </motion.div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Updated</p>
-                <p className="text-xs font-semibold text-slate-800">{lastUpdated}</p>
+                <p className="text-xs text-slate-500 font-medium font-lexend">Updated</p>
+                <p className="text-xs font-semibold text-slate-800 font-lexend">{lastUpdated}</p>
               </div>
             </motion.div>
           </motion.div>
 
-          {/* Description Section - Always Show */}
+          {/* Description Section - Compact */}
           <motion.div 
-            className="mb-0 flex-1"
+            className="mb-2 flex-1"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
             <motion.div 
-              className="bg-white rounded-xl p-2 border border-slate-100 h-full overflow-hidden"
+              className="bg-gradient-to-br from-white via-slate-50 to-white rounded-2xl p-3 border border-slate-200/60 h-full overflow-hidden shadow-sm"
               animate={{
-                borderColor: isHovered ? "#cbd5e1" : "#e2e8f0"
+                borderColor: isHovered ? "#cbd5e1" : "#e2e8f0",
+                y: isHovered ? -1 : 0,
+                scale: isHovered ? 1.01 : 1
               }}
-              transition={{ duration: 0.3 }}
+              transition={{ 
+                duration: 0.4,
+                type: "spring",
+                stiffness: 80
+              }}
             >
-              <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+              <p className="text-sm text-slate-700 leading-relaxed line-clamp-3 font-lexend">
                 {hasDescription ? description : "No Description"}
               </p>
             </motion.div>
@@ -257,38 +325,69 @@ const SummaryCard = ({
 
           {/* Action Button */}
           <motion.div
-            className="flex justify-center mt-2"
+            className="flex justify-center mt-1"
             animate={{ y: isHovered ? -2 : 0 }}
             transition={{ duration: 0.3 }}
           >
             <motion.div
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-slate-600 to-slate-700 text-white px-4 py-2 rounded-xl shadow-sm font-semibold text-sm"
-              whileHover={{ scale: 1.05 }}
+              className="inline-flex items-center space-x-2 text-white px-5 py-2.5 rounded-2xl shadow-lg font-semibold text-sm font-lexend"
+              style={{
+                background: "linear-gradient(to right, rgb(47, 114, 47), oklch(0.51 0.2 145.36))"
+              }}
+              whileHover={{ 
+                scale: 1.08, 
+                y: -2,
+                transition: { 
+                  duration: 0.3,
+                  type: "spring",
+                  stiffness: 200
+                }
+              }}
+              whileTap={{ 
+                scale: 0.95,
+                transition: { duration: 0.1 }
+              }}
               animate={{
                 boxShadow: isHovered 
-                  ? "0 4px 12px -2px rgba(0, 0, 0, 0.15)" 
-                  : "0 2px 8px -2px rgba(0, 0, 0, 0.1)"
+                  ? "0 12px 25px -6px rgba(0, 0, 0, 0.25)" 
+                  : "0 4px 12px -2px rgba(0, 0, 0, 0.15)"
               }}
-              transition={{ duration: 0.3 }}
+              transition={{ 
+                duration: 0.4,
+                type: "spring",
+                stiffness: 150
+              }}
             >
-              <span>Open</span>
+              <span>Click to Start</span>
               <motion.div
-                animate={{ x: isHovered ? 2 : 0 }}
-                transition={{ duration: 0.2 }}
+                animate={{ 
+                  x: isHovered ? 4 : 0,
+                  rotate: isHovered ? 15 : 0
+                }}
+                transition={{ 
+                  duration: 0.3,
+                  type: "spring",
+                  stiffness: 200
+                }}
               >
-                <LuArrowRight size={12} />
+                <LuArrowRight size={14} />
               </motion.div>
             </motion.div>
           </motion.div>
         </div>
 
-        {/* Hover Border Effect */}
+        {/* Enhanced Hover Border Effect */}
         <motion.div
-          className="absolute inset-0 rounded-2xl border-2 border-transparent"
+          className="absolute inset-0 rounded-3xl border-2 border-transparent"
           animate={{ 
-            borderColor: isHovered ? "rgba(99, 102, 241, 0.3)" : "transparent"
+            borderColor: isHovered ? "rgba(99, 102, 241, 0.4)" : "transparent",
+            scale: isHovered ? 1.02 : 1
           }}
-          transition={{ duration: 0.3 }}
+          transition={{ 
+            duration: 0.4,
+            type: "spring",
+            stiffness: 100
+          }}
         />
       </motion.div>
     </motion.div>
