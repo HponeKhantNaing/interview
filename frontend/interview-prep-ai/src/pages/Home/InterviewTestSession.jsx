@@ -250,14 +250,49 @@ const InterviewTestSession = () => {
                         const idx = colIndex * 5 + i;
                         const page = Math.floor(idx / QUESTIONS_PER_PAGE) + 1;
                         const isCurrentPage = page === currentPage;
+                        
+                        // Determine button styling based on answer status
+                        let buttonClass = `w-10 h-10 flex items-center justify-center rounded border text-base font-semibold shadow-sm hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all duration-200`;
+                        
+                        if (isFinalSubmitted) {
+                          // After submission - show correct/incorrect based on stored isCorrect field
+                          if (q.userAnswer && q.userAnswer.trim() !== '') {
+                            if (q.isCorrect === true) {
+                              buttonClass += " bg-green-100 border-green-400 text-green-700 hover:bg-green-200";
+                            } else if (q.isCorrect === false) {
+                              buttonClass += " bg-red-100 border-red-400 text-red-700 hover:bg-red-200";
+                            } else {
+                              // Fallback: if isCorrect is not set, use simple comparison
+                              const isCorrect = q.userAnswer && q.answer && q.userAnswer.trim().toLowerCase() === q.answer.trim().toLowerCase();
+                              if (isCorrect) {
+                                buttonClass += " bg-green-100 border-green-400 text-green-700 hover:bg-green-200";
+                              } else {
+                                buttonClass += " bg-red-100 border-red-400 text-red-700 hover:bg-red-200";
+                              }
+                            }
+                          } else {
+                            // No answer submitted
+                            buttonClass += " bg-red-100 border-red-400 text-red-700 hover:bg-red-200";
+                          }
+                        } else {
+                          // Before submission - show answered/unanswered
+                          if (q.userAnswer && q.userAnswer.trim() !== '') {
+                            // Has answer
+                            buttonClass += " bg-blue-100 border-blue-400 text-blue-700 hover:bg-blue-200";
+                          } else {
+                            // No answer
+                            if (isCurrentPage) {
+                              buttonClass += " bg-orange-100 border-orange-400";
+                            } else {
+                              buttonClass += " bg-white border-gray-300";
+                            }
+                          }
+                        }
+                        
                         return (
                           <button
                             key={q._id}
-                            className={`w-10 h-10 flex items-center justify-center rounded border border-gray-300 text-base font-semibold shadow-sm hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-400 ${
-                              isCurrentPage
-                                ? "bg-orange-100 border-orange-400"
-                                : "bg-white"
-                            }`}
+                            className={buttonClass}
                             onClick={() => {
                               if (page !== currentPage) {
                                 setCurrentPage(page);

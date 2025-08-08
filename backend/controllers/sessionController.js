@@ -194,7 +194,11 @@ exports.finalSubmitSession = async (req, res) => {
     await Promise.all(session.questions.map(async (q) => {
       // Get the user answer from the database (updated question) or from request body
       const userAnswer = q.userAnswer || answers[q._id] || "";
-      if (!userAnswer || userAnswer.trim() === "") return; // Skip empty answers
+      if (!userAnswer || userAnswer.trim() === "") {
+        // Mark as incorrect for empty answers
+        await Question.findByIdAndUpdate(q._id, { isCorrect: false });
+        return;
+      }
       
       answeredQuestions++;
       console.log(`Checking answer for question ${q._id}:`, {
@@ -221,8 +225,12 @@ exports.finalSubmitSession = async (req, res) => {
         if (aiRes.data && aiRes.data.isCorrect) {
           correctAnswers++;
           console.log(`✅ Question ${q._id} marked as correct`);
+          // Store correctness in database
+          await Question.findByIdAndUpdate(q._id, { isCorrect: true });
         } else {
           console.log(`❌ Question ${q._id} marked as incorrect`);
+          // Store correctness in database
+          await Question.findByIdAndUpdate(q._id, { isCorrect: false });
         }
       } catch (err) {
         console.error(`AI check failed for question ${q._id}:`, err.message);
@@ -248,8 +256,12 @@ exports.finalSubmitSession = async (req, res) => {
         if (hasTechnicalKnowledge || hasSubstantialContent) {
           correctAnswers++;
           console.log(`✅ Question ${q._id} marked as correct (fallback: technical terms: ${userTechnicalTerms.length}, content words: ${meaningfulWords.length})`);
+          // Store correctness in database
+          await Question.findByIdAndUpdate(q._id, { isCorrect: true });
         } else {
           console.log(`❌ Question ${q._id} marked as incorrect (fallback: insufficient content or technical terms)`);
+          // Store correctness in database
+          await Question.findByIdAndUpdate(q._id, { isCorrect: false });
         }
       }
     }));
