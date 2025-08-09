@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { LuTrash2, LuArrowRight, LuClock, LuUsers, LuFileText } from "react-icons/lu";
 import { motion } from "framer-motion";
 import { getInitials } from "../../utils/helper";
@@ -16,6 +16,12 @@ const SummaryCard = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Random fruit emoji for each card
+  const randomFruit = useMemo(() => {
+    const fruits = ['🍎', '🍌', '🍊', '🍇', '🍓', '🍑', '🥭', '🍍', '🥥', '🍒', '🍐', '🥝', '🍉', '🍈', '🥑', '🍋', '🍊', '🍎', '🍌', '🍇'];
+    return fruits[Math.floor(Math.random() * fruits.length)];
+  }, []);
+
   const handleCardClick = () => {
     onSelect();
   };
@@ -25,7 +31,7 @@ const SummaryCard = ({
 
   return (
     <motion.div
-      className="relative w-95 h-92 group"
+      className="relative w-97 h-90 group"
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       whileHover={{ y: -12, scale: 1.03, rotateY: 2 }}
@@ -203,17 +209,37 @@ const SummaryCard = ({
               </div>
             </div>
 
-            {/* Delete Button */}
-            <motion.button
-              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 flex-shrink-0"
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <LuTrash2 size={14} />
-            </motion.button>
+            {/* Fruit Icon and Delete Button */}
+            <div className="flex items-center space-x-2">
+              {/* Random Fruit */}
+              <motion.div
+                className="text-2xl opacity-60"
+                animate={{ 
+                  scale: isHovered ? [1, 1.2, 1] : 1,
+                  rotate: isHovered ? [0, 10, -10, 0] : 0,
+                  y: isHovered ? [0, -2, 0] : 0
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                {randomFruit}
+              </motion.div>
+              
+              {/* Delete Button */}
+              <motion.button
+                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 flex-shrink-0"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+              >
+                <LuTrash2 size={14} />
+              </motion.button>
+            </div>
           </div>
 
           {/* Enhanced Stats Row */}
@@ -270,7 +296,7 @@ const SummaryCard = ({
               <LuFileText size={12} className="text-emerald-600" />
             </motion.div>
               <div>
-                <p className="text-xs text-slate-500 font-medium font-lexend">Q's</p>
+                <p className="text-xs text-slate-500 font-medium font-lexend">Questions</p>
                 <p className="text-xs font-semibold text-slate-800 font-lexend">{questions}</p>
               </div>
             </motion.div>
@@ -318,7 +344,7 @@ const SummaryCard = ({
               }}
             >
               <p className="text-sm text-slate-700 leading-relaxed line-clamp-3 font-lexend">
-                {hasDescription ? description : "No Description"}
+                {hasDescription ? description : "Description not provided."}
               </p>
             </motion.div>
           </motion.div>

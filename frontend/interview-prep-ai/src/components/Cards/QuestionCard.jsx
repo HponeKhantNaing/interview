@@ -77,9 +77,9 @@ const QuestionCard = ({
       {/* <div className="mt-2 mb-4 text-sm text-gray-600">AI Answer: {answer}</div> */}
 
       {isFinalSubmitted ? (
-        <div className="bg-gray-50 p-3 rounded border text-xs text-gray-700">
-          <p><strong>Your submitted answer:</strong></p>
-          <p className="mt-1">{userAnswer || "No answer submitted."}</p>
+        <div className="bg-gray-50 p-4 rounded border text-sm text-gray-700">
+          <p className="text-base font-semibold mb-2"><strong>Your submitted answer:</strong></p>
+          <p className="mt-2 text-sm leading-relaxed">{userAnswer || "No answer submitted."}</p>
           {/* {answer && (
             <p className="mt-1 text-green-600">
               <strong>Correct answer:</strong> {answer}

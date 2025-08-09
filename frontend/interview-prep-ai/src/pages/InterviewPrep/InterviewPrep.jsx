@@ -544,20 +544,15 @@ const InterviewPrep = () => {
   
             {sessionData?.isFinalSubmitted && (
               <div className="flex justify-center mt-8 mb-6">
-                <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-2xl relative overflow-hidden">
-                  {/* Water glass layers */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-green-50/20 to-blue-50/20 rounded-2xl"></div>
-                  
-                  <div className="relative z-10 text-center">
-                    <div className="flex items-center justify-center mb-3">
-                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse mr-3"></div>
-                      <h3 className="text-lg font-semibold text-green-800">Session Submitted</h3>
-                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse ml-3"></div>
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 max-w-md w-full">
+                  <div className="text-center">
+                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                      <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
                     </div>
-                    <p className="text-green-700 font-medium text-sm leading-relaxed">
-                      This session has been submitted. You may only review your answers.
-                    </p>
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">All Set!</h3>
+                    <p className="text-sm text-gray-600">Your session has been submitted successfully. You're now in review mode.</p>
                   </div>
                 </div>
               </div>
@@ -572,7 +567,10 @@ const InterviewPrep = () => {
             <div className="flex justify-center mt-8">
               {sessionData?.feedback ? (
                 <button
-                  className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors"
+                  className="text-white px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                  style={{ 
+                    background: 'linear-gradient(to right, rgb(47, 114, 47), oklch(0.51 0.2 145.36))'
+                  }}
                   onClick={() => navigate(`/interview-prep/${sessionId}/feedback`)}
                 >
                   Show Feedback
