@@ -99,7 +99,10 @@ const Dashboard = () => {
               <p className="text-gray-500 mb-4">Create your first interview session to get started</p>
               <button
                 onClick={() => setOpenCreateModal(true)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-6 py-2 text-white rounded-lg transition-colors"
+                style={{ 
+                  background: 'linear-gradient(to right, rgb(47, 114, 47), oklch(0.51 0.2 145.36))'
+                }}
               >
                 Create Session
               </button>
